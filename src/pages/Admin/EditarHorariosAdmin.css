@@ -1,0 +1,264 @@
+.editar-horarios-admin {
+  max-width: 600px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 32px 24px;
+}
+.editar-horarios-admin h2 {
+  margin-bottom: 24px;
+  color: var(--primary-color);
+}
+.editar-horarios-admin table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+.editar-horarios-admin th, .editar-horarios-admin td {
+  border: 1px solid #eee;
+  padding: 8px 10px;
+  text-align: left;
+}
+.editar-horarios-admin th {
+  background: #f7f7f7;
+}
+.editar-horarios-admin input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.editar-horarios-admin button {
+  margin-right: 8px;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 4px;
+  background: var(--primary-color);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.editar-horarios-admin button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+.mensaje-horario {
+  padding: 10px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  font-size: 1.05em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1.5px solid transparent;
+  transition: all 0.2s;
+}
+.mensaje-horario-success {
+  background: #e0ffe0;
+  color: #1a7f1a;
+  border-color: #b2ffb2;
+}
+.mensaje-horario-error {
+  background: #ffe0e0;
+  color: #d32f2f;
+  border-color: #ffb2b2;
+}
+.cargando-horario {
+  color: #888;
+  margin-bottom: 12px;
+}
+
+/* Lista de horarios */
+.horarios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.horario-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.horario-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.horario-dia {
+  font-weight: 700;
+  color: #d13fa0;
+}
+
+.horario-valores {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.horario-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #d13fa0;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Modal */
+.horario-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 6, 12, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInModalBg 0.2s;
+}
+
+.horario-modal {
+  background: linear-gradient(135deg, #ffffff 80%, #fce4ec 100%);
+  border-radius: 18px;
+  box-shadow: 0 16px 50px rgba(0,0,0,0.22);
+  padding: 26px 22px;
+  width: min(92vw, 480px);
+  position: relative;
+}
+
+.horario-modal h3 {
+  margin: 0 0 6px 0;
+  color: #d13fa0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.horario-modal-subtitle {
+  margin: 0 0 14px 0;
+  color: #666;
+}
+
+.horario-modal-label {
+  display: block;
+  font-weight: 600;
+  color: #ad1457;
+  margin-bottom: 6px;
+}
+
+.horario-modal-input {
+  width: 100%;
+  border: 1.5px solid #f3c6de;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+  margin-bottom: 16px;
+}
+
+.horario-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.horario-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #d81b60;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .editar-horarios-admin {
+    margin: 20px 12px;
+    padding: 20px 16px;
+  }
+
+  .horario-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .horario-btn {
+    width: 100%;
+  }
+
+  .horario-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .horario-modal-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .editar-horarios-admin {
+    margin: 20px 12px;
+    padding: 20px 16px;
+  }
+
+  .editar-horarios-admin table,
+  .editar-horarios-admin thead,
+  .editar-horarios-admin tbody,
+  .editar-horarios-admin th,
+  .editar-horarios-admin tr,
+  .editar-horarios-admin td {
+    display: block;
+    width: 100%;
+  }
+
+  .editar-horarios-admin thead {
+    display: none;
+  }
+
+  .editar-horarios-admin tr {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  }
+
+  .editar-horarios-admin td {
+    border: none;
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    text-align: right;
+  }
+
+  .editar-horarios-admin td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: #555;
+    text-align: left;
+  }
+
+  .editar-horarios-admin input {
+    flex: 1;
+  }
+
+  .editar-horarios-admin td[data-label="Acción"] {
+    justify-content: flex-start;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+}

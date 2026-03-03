@@ -1,0 +1,296 @@
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "nombre": "Admin",
+      "email": "admin@turnos.com",
+      "password": "admin123",
+      "telefono": "3816472708",
+      "rol": "superadmin"
+    },
+    {
+      "nombre": "gaston",
+      "email": "gastonituarte100@gmail.com",
+      "password": "123456",
+      "telefono": "124646464",
+      "rol": "cliente",
+      "id": 1764034413012
+    },
+    {
+      "nombre": "pp",
+      "email": "sdsd@sdsd",
+      "telefono": "4545454",
+      "password": "temporal123",
+      "rol": "cliente",
+      "id": 1764034413013
+    },
+    {
+      "nombre": "pp",
+      "email": "dsds@dsdsd",
+      "telefono": "26565655",
+      "password": "temporal123",
+      "rol": "cliente",
+      "id": 1764034413014
+    },
+    {
+      "nombre": "gass",
+      "email": "gastomituarte@gmail.com",
+      "telefono": "454545",
+      "password": "temporal123",
+      "rol": "cliente",
+      "id": 1764034413015
+    },
+    {
+      "nombre": "wewe",
+      "email": "wewew@dsd",
+      "telefono": "eweewew",
+      "password": "temporal123",
+      "rol": "cliente",
+      "id": 1764034413016
+    },
+    {
+      "nombre": "kkk",
+      "email": "gafa@fsfsf",
+      "telefono": "454545",
+      "password": "temporal123",
+      "rol": "cliente",
+      "id": 1764034413017
+    }
+  ],
+  "servicios": [
+    {
+      "id": 1,
+      "nombre": "Esmaltado Semipermanente",
+      "precio": 8000,
+      "descripcion": "Esmaltado de larga duración (hasta 3 semanas) con preparación completa de la uña.",
+      "duracion": 60,
+      "imagen": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRwcim8gsm1FnhENICayUrFe0LAk_g3nYZcCw&s"
+    },
+    {
+      "id": 2,
+      "nombre": "Refuerzo / Capping",
+      "precio": 15000,
+      "descripcion": "Refuerzo y reconstrucción para fortalecer uñas naturales débiles o quebradizas.",
+      "duracion": 150,
+      "imagen": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNCR_XquW0GUd1RW4k4-D7ng_kMiTOHCsDVQ&s"
+    },
+    {
+      "id": 3,
+      "nombre": "Soft Gel Manos",
+      "precio": 9000,
+      "descripcion": "Extensión flexible y liviana con acabado natural ideal para manos.",
+      "duracion": 80,
+      "imagen": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYrbgfvu6EqYKVvewyMpyzSBMxKEqe152Kow&s"
+    },
+    {
+      "id": 4,
+      "nombre": "Diseños a Mano Alzada",
+      "precio": 5000,
+      "descripcion": "Arte personalizado sobre tus uñas: flores, lettering, minimalismo y más (precio base).",
+      "duracion": 45,
+      "imagen": "/servicios/disenos.jpg"
+    },
+    {
+      "id": 5,
+      "nombre": "Esmaltado Semipermanente en Pies",
+      "precio": 8000,
+      "descripcion": "Aplicación semipermanente en pies con preparación y acabado profesional.",
+      "duracion": 60,
+      "imagen": "https://i.ytimg.com/vi/V2T8RkqYuD8/maxresdefault.jpg"
+    },
+    {
+      "id": 6,
+      "nombre": "Soft Gel en Pies",
+      "precio": 9500,
+      "descripcion": "Extensión y refuerzo Soft Gel adaptado para uñas de pies.",
+      "duracion": 70,
+      "imagen": "/servicios/softgelpies.jpg"
+    }
+  ],
+  "turnos": [
+    {
+      "usuarioId": 1764034413012,
+      "servicioId": 1,
+      "fecha": "2025-11-24",
+      "hora": "10:30",
+      "estado": "completado",
+      "pagoId": "MP1764034458744rrwa8ti8g",
+      "montoPagado": 4000,
+      "montoTotal": 8000,
+      "createdAt": "2025-11-25T01:34:18.744Z",
+      "id": 1,
+      "registroEstadistica": "seña"
+    },
+    {
+      "usuarioId": 1764034413012,
+      "servicioId": 5,
+      "fecha": "2025-11-26",
+      "hora": "17:30",
+      "estado": "completado",
+      "pagoId": "MP1764040904966alqbs475r",
+      "montoPagado": 4000,
+      "montoTotal": 8000,
+      "createdAt": "2025-11-25T03:21:44.966Z",
+      "id": 2,
+      "registroEstadistica": "seña"
+    },
+    {
+      "usuarioId": 1764034413012,
+      "servicioId": 1,
+      "fecha": "2025-12-08",
+      "hora": "08:00",
+      "estado": "completado",
+      "pagoId": "MP176516209352667lysupkq",
+      "montoPagado": 4000,
+      "montoTotal": 8000,
+      "createdAt": "2025-12-08T02:48:13.526Z",
+      "id": 3,
+      "email": "gastonituarte100@gmail.com",
+      "nombre": "gaston",
+      "telefono": "124646464",
+      "registroEstadistica": "seña"
+    },
+    {
+      "usuarioId": 1764034413014,
+      "servicioId": 1,
+      "fecha": "2025-12-09",
+      "hora": "08:00",
+      "estado": "completado",
+      "pagoId": "PRESENCIAL1765166785653",
+      "montoPagado": 0,
+      "montoTotal": 8000,
+      "createdAt": "2025-12-08T04:06:25.653Z",
+      "id": 4,
+      "email": "dsds@dsdsd",
+      "nombre": "pp",
+      "telefono": "26565655",
+      "registroEstadistica": "seña"
+    },
+    {
+      "usuarioId": 1764034413015,
+      "servicioId": 1,
+      "fecha": "2025-12-13",
+      "hora": "14:00",
+      "estado": "completado",
+      "pagoId": "PRESENCIAL1765582890093",
+      "montoPagado": 4000,
+      "montoTotal": 8000,
+      "createdAt": "2025-12-12T23:41:30.094Z",
+      "id": 5,
+      "registroEstadistica": "total"
+    },
+    {
+      "usuarioId": 1764034413016,
+      "servicioId": 2,
+      "fecha": "2025-12-12",
+      "hora": "14:00",
+      "estado": "completado",
+      "pagoId": "PRESENCIAL1765583803754",
+      "montoPagado": 7500,
+      "montoTotal": 15000,
+      "createdAt": "2025-12-12T23:56:43.754Z",
+      "id": 6,
+      "registroEstadistica": "total"
+    },
+    {
+      "usuarioId": 1764034413017,
+      "servicioId": 1,
+      "fecha": "2025-12-15",
+      "hora": "08:00",
+      "estado": "confirmado",
+      "pagoId": "PRESENCIAL1765752128166",
+      "montoPagado": 4000,
+      "montoTotal": 8000,
+      "createdAt": "2025-12-14T22:42:08.166Z",
+      "id": 7
+    },
+    {
+      "usuarioId": 1764034413012,
+      "servicioId": 6,
+      "fecha": "2025-12-15",
+      "hora": "10:30",
+      "estado": "confirmado",
+      "pagoId": "MP1765753736748zp4cahsgk",
+      "montoPagado": 4750,
+      "montoTotal": 9500,
+      "createdAt": "2025-12-14T23:08:56.748Z",
+      "id": 8
+    }
+  ],
+  "horariosDisponibles": [
+    "08:00",
+    "10:30",
+    "14:00",
+    "17:30",
+    "20:00"
+  ],
+  "horariosPorDia": {
+    "1": [
+      "08:00",
+      "10:30",
+      "14:00",
+      "17:30"
+    ],
+    "2": [
+      "08:00",
+      "10:30",
+      "14:00",
+      "17:30",
+      "20:00"
+    ],
+    "3": [
+      "08:00",
+      "10:30",
+      "14:00",
+      "17:30"
+    ],
+    "4": [
+      "08:00",
+      "10:30",
+      "14:00",
+      "17:30",
+      "20:00"
+    ],
+    "5": [
+      "08:00",
+      "10:30",
+      "14:00",
+      "17:30"
+    ],
+    "6": [
+      "08:00",
+      "10:30",
+      "14:00",
+      "17:30",
+      "20:00"
+    ],
+    "2025-12-10": [
+      "08:00",
+      "10:30",
+      "14:00",
+      "17:30"
+    ]
+  },
+  "configuracion": {
+    "horaInicio": "08:00",
+    "horaFin": "20:00",
+    "diasLaborales": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "porcentajeSeña": 50,
+    "emailNotificaciones": "delfinanailsstudio@gmail.com"
+  },
+  "carrito": [],
+  "historialTurnos": [],
+  "carrusel": {
+    "imagenes": [
+      "/carrusel1.jpg",
+      "/carrusel2.jpg"
+    ]
+  }
+}

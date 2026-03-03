@@ -1,0 +1,144 @@
+.editar-carrusel-admin {
+  max-width: 540px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 16px #d13fa033;
+  padding: 32px 24px 24px 24px;
+}
+.editar-carrusel-admin h2 {
+  color: #d13fa0;
+  margin-bottom: 18px;
+  font-size: 2rem;
+  text-align: center;
+}
+.imagenes-carrusel-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 18px;
+  justify-content: center;
+}
+.carrusel-cargando {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #b71c5a;
+  background: #ffe4f3;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+.carrusel-spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #f3c7da;
+  border-top-color: #d13fa0;
+  border-radius: 50%;
+  animation: carruselSpin 0.8s linear infinite;
+}
+.carrusel-cargando-texto {
+  font-size: 0.95rem;
+}
+.img-carrusel-item {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px #d13fa022;
+  background: #fafafa;
+  width: 120px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img-carrusel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.img-carrusel-item button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px #d13fa033;
+  transition: background 0.2s;
+}
+.img-carrusel-item button:hover {
+  background: #ffe4f3;
+}
+.form-carrusel-admin {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.form-carrusel-admin input[type="text"] {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1.5px solid #d13fa0;
+  font-size: 1rem;
+}
+.form-carrusel-admin button {
+  background: #d13fa0;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.form-carrusel-admin button:hover {
+  background: #b71c5a;
+}
+.subir-carrusel-admin {
+  margin-bottom: 10px;
+}
+.btn-subir-carrusel {
+  background: #f8bbd0;
+  color: #b71c5a;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 16px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s;
+  display: inline-block;
+}
+.btn-subir-carrusel:hover {
+  background: #d13fa0;
+  color: #fff;
+}
+.subiendo-carrusel {
+  margin-left: 10px;
+  color: #d13fa0;
+  font-size: 0.95rem;
+}
+.error-carrusel {
+  color: #b71c5a;
+  background: #ffe4f3;
+  border-radius: 7px;
+  padding: 7px 12px;
+  margin-top: 8px;
+  text-align: center;
+}
+@keyframes carruselSpin {
+  to { transform: rotate(360deg); }
+}
+@media (max-width: 600px) {
+  .editar-carrusel-admin {
+    padding: 16px 4vw 16px 4vw;
+  }
+  .img-carrusel-item {
+    width: 90px;
+    height: 60px;
+  }
+}

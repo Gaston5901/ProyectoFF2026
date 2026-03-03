@@ -1,0 +1,142 @@
+.servicio-modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(10, 6, 12, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInModalBg 0.2s;
+}
+
+@keyframes fadeInModalBg {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.servicio-modal {
+  background: linear-gradient(135deg, #ffffff 80%, #fce4ec 100%);
+  border-radius: 20px;
+  box-shadow: 0 16px 50px rgba(0,0,0,0.22);
+  padding: 34px 30px 24px 30px;
+  min-width: 340px;
+  max-width: 720px;
+  width: min(92vw, 720px);
+  max-height: 90vh;
+  overflow: auto;
+  animation: fadeInModal 0.25s cubic-bezier(.4,1.4,.6,1);
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+@keyframes fadeInModal {
+  from { transform: scale(0.92) translateY(40px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.servicio-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #d81b60;
+  cursor: pointer;
+  z-index: 1;
+  transition: color 0.2s;
+}
+.servicio-modal-close:hover {
+  color: #ad1457;
+}
+
+.servicio-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 24px;
+}
+.servicio-modal-grid label {
+  color: #ad1457;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.servicio-modal h3 {
+  color: #d13fa0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  margin: 0 0 8px 0;
+}
+
+.servicio-modal .form-group input,
+.servicio-modal .form-group textarea {
+  width: 100%;
+  border: 1.5px solid #f3c6de;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.servicio-modal .form-group textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.servicio-modal .form-group input:focus,
+.servicio-modal .form-group textarea:focus {
+  border-color: #d13fa0;
+  box-shadow: 0 0 0 3px rgba(209, 63, 160, 0.15);
+  outline: none;
+}
+
+.servicio-modal-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+
+.servicio-modal-actions .btn {
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 700;
+}
+
+.servicio-modal-actions .btn-primary {
+  background: linear-gradient(90deg,#d13fa0,#ff5ec4);
+  border: none;
+}
+
+.servicio-modal-actions .btn-secondary {
+  border: 1.5px solid #d13fa0;
+  color: #d13fa0;
+}
+
+@media (max-width: 600px) {
+  .servicio-modal {
+    min-width: 0;
+    padding: 18px 6vw 16px 6vw;
+    border-radius: 16px;
+  }
+  .servicio-modal-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .servicio-modal h3 {
+    font-size: 18px;
+  }
+
+  .servicio-modal-actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .servicio-modal-actions .btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,489 @@
+/* Horarios reservados destacados */
+.hora-card .tag-enproceso {
+  background: #ffe6f7;
+  color: #d13fa0;
+  border-radius: 10px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  font-size: 0.85em;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.hora-card.ocupado {
+  background: #f2f3f6;
+  color: #8b8f9c !important;
+  border: 1px solid #e3e5ee;
+  opacity: 1 !important;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(20, 20, 40, 0.08);
+  cursor: not-allowed !important;
+  font-weight: 600;
+  filter: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.hora-card.ocupado.enproceso {
+  background: #ffd447 !important;
+  color: #fff !important;
+  border: 1px solid #e6b800;
+}
+
+.hora-card.ocupado .hora-text {
+  color: #fff !important;
+  font-weight: 700;
+  opacity: 1 !important;
+}
+
+.hora-card.ocupado .tag-reservado {
+  background: #e6e8f0;
+  color: #7c8191;
+  border-radius: 10px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  font-size: 0.85em;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.hora-card.ocupado svg {
+  color: #9aa0ae !important;
+  opacity: 0.8;
+}
+.reservar-page {
+  padding-bottom: 60px;
+  min-height: calc(100vh - 200px);
+}
+
+.reservar-header {
+  background: linear-gradient(120deg, #e91e63 0%, #f8bbd0 100%);
+  color: var(--white);
+  padding: 12px 24px;
+  text-align: center;
+  border-radius: 0 0 24px 24px;
+  box-shadow: 0 4px 24px rgba(233,30,99,0.12);
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  backdrop-filter: blur(8px);
+  border-bottom: 2px solid #fff3fa;
+  overflow: hidden;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.reservar-header::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 8px;
+  background: linear-gradient(90deg, #fff3fa 0%, #f8bbd0 100%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.reservar-header h1 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 2px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(233,30,99,0.10);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+}
+
+.reservar-header p {
+  font-size: 14px;
+  opacity: 0.92;
+  margin-bottom: 0;
+  font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+}
+
+.header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  margin-right: 2px;
+  filter: drop-shadow(0 2px 4px #e91e6333);
+}
+
+/* Progress Steps */
+.progress-steps {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  margin-bottom: 60px;
+  position: relative;
+}
+
+.progress-steps::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  background-color: #e0e0e0;
+  z-index: 0;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  color: #757575;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: var(--white);
+  box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
+}
+
+.step.completed .step-number {
+  background-color: var(--success);
+  color: var(--white);
+}
+
+.step span {
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.step.active span {
+  color: var(--primary-color);
+}
+
+/* Paso Container */
+.paso-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.paso-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 32px;
+  margin-bottom: 30px;
+  color: var(--text-dark);
+}
+
+.paso-title svg {
+  color: var(--primary-color);
+}
+
+/* Servicios Grid Reserva */
+.servicios-grid-reserva {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.servicio-card-reserva {
+  background: var(--white);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.servicio-card-reserva:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(233, 30, 99, 0.2);
+  border-color: var(--primary-color);
+}
+
+.servicio-card-reserva h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: var(--text-dark);
+}
+
+.servicio-card-reserva p {
+  color: var(--text-light);
+  font-size: 14px;
+  margin-bottom: 15px;
+  min-height: 40px;
+}
+
+.servicio-info-reserva {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.servicio-info-reserva .precio {
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.servicio-info-reserva .duracion {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+/* Servicio Seleccionado Info */
+.servicio-seleccionado-info {
+  background: linear-gradient(135deg, #fce4ec, #f3e5f5);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.servicio-seleccionado-info p {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* Fechas Grid */
+.fechas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+}
+
+.fecha-card {
+  background: var(--white);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  border: 2px solid transparent;
+}
+
+.fecha-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(233, 30, 99, 0.2);
+  border-color: var(--primary-color);
+}
+
+.fecha-card.selected {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: var(--white);
+  border-color: var(--primary-color);
+}
+
+.fecha-dia {
+  font-size: 12px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+
+.fecha-numero {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.fecha-mes {
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+/* Horarios Grid */
+.horarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.hora-card {
+  background: #f7f8fc;
+  padding: 18px 16px;
+  border-radius: 14px;
+  box-shadow: 0 6px 14px rgba(20, 20, 40, 0.08);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  border: 1px solid #e8eaf1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #2c2f3a;
+}
+
+.hora-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(20, 20, 40, 0.12);
+  border-color: #cfd3e2;
+}
+
+.hora-card.selected {
+  background: #ffffff;
+  color: #d13fa0;
+  border: 2px solid #d13fa0;
+  box-shadow: 0 10px 22px rgba(209, 63, 160, 0.18);
+}
+
+.hora-card svg {
+  opacity: 0.7;
+  color: #5c6070;
+}
+
+/* Resumen Reserva */
+.resumen-reserva {
+  background: var(--white);
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.resumen-reserva h3 {
+  font-size: 24px;
+  margin-bottom: 25px;
+  text-align: center;
+  color: var(--text-dark);
+}
+
+.resumen-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.resumen-item:last-of-type {
+  border-bottom: none;
+}
+
+.resumen-seña {
+  background: linear-gradient(135deg, #fce4ec, #f3e5f5);
+  padding: 20px;
+  margin: 20px -10px 0;
+  border-radius: 8px;
+  font-size: 18px;
+}
+
+.precio-seña {
+  font-size: 28px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-reservar {
+  width: 100%;
+  margin-top: 25px;
+  padding: 16px;
+  font-size: 18px;
+}
+
+.no-horarios {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.no-horarios p {
+  font-size: 18px;
+  color: var(--text-light);
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .reservar-header {
+    padding: 7px 8px;
+    min-height: 38px;
+    border-radius: 0 0 12px 12px;
+  }
+  .reservar-header h1 {
+    font-size: 14px;
+    margin-bottom: 0;
+    gap: 6px;
+  }
+  .reservar-header p {
+    font-size: 11px;
+  }
+  .progress-steps {
+    gap: 20px;
+  }
+
+  .progress-steps::before {
+    left: 15%;
+    right: 15%;
+  }
+
+  .paso-title {
+    font-size: 24px;
+  }
+
+  .servicios-grid-reserva,
+  .fechas-grid,
+  .horarios-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .horarios-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .hora-card {
+    padding: 14px 10px;
+    border-radius: 10px;
+    gap: 6px;
+    font-size: 14px;
+  }
+
+  .hora-card svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .servicio-seleccionado-info {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+}

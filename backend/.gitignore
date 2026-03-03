@@ -1,0 +1,12 @@
+#variable de entorno 
+.env 
+.env.*
+
+#dependencias de node
+.vscode
+node_modules
+
+#configuracion de vscode
+.vscode/*
+!.vscode/extensions.json
+
