@@ -1,0 +1,109 @@
+[33mcommit 095405b8739c591824e626f9edfc8f681269d02b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Gaston5901 <gastonituarte100@gmail.com>
+Date:   Tue Mar 3 16:30:41 2026 -0300
+
+    first commit
+
+ .gitignore                                         |   24 [32m+[m
+ CHANGELOG.md                                       |  213 [32m+[m
+ INICIO-RAPIDO.md                                   |  135 [32m+[m
+ INTEGRACION.md                                     |  388 [32m++[m
+ MEJORAS.md                                         |  373 [32m++[m
+ README.md                                          |  171 [32m+[m
+ backend/.babelrc                                   |    3 [32m+[m
+ backend/.gitignore                                 |   12 [32m+[m
+ backend/README-CONEXION.md                         |   27 [32m+[m
+ backend/cargar-horarios-iniciales.js               |   33 [32m+[m
+ backend/config.js                                  |    5 [32m+[m
+ backend/index.js                                   |   67 [32m+[m
+ backend/migrate-db.js                              |   90 [32m+[m
+ backend/package-lock.json                          | 5866 [32m++++++++++++++++++++[m
+ backend/package.json                               |   38 [32m+[m
+ backend/public/index.html                          |    0
+ .../comprobante-1770921824043-245146829.PNG        |  Bin [31m0[m -> [32m2762016[m bytes
+ .../comprobante-1770921988396-15813023.PNG         |  Bin [31m0[m -> [32m2762016[m bytes
+ .../comprobante-1770922203141-977771527.PNG        |  Bin [31m0[m -> [32m2762016[m bytes
+ .../comprobante-1770922602148-900672623.PNG        |  Bin [31m0[m -> [32m2762016[m bytes
+ .../comprobante-1770924323159-811260665.PNG        |  Bin [31m0[m -> [32m2762016[m bytes
+ .../comprobante-1770925074990-184148003.PNG        |  Bin [31m0[m -> [32m2762016[m bytes
+ .../comprobante-1770930092604-806762140.PNG        |  Bin [31m0[m -> [32m2762016[m bytes
+ .../comprobante-1770930422139-93399611.PNG         |  Bin [31m0[m -> [32m2762016[m bytes
+ .../comprobante-1770930842732-580265550.PNG        |  Bin [31m0[m -> [32m2762016[m bytes
+ .../comprobante-1770946528124-57092020.PNG         |  Bin [31m0[m -> [32m2762016[m bytes
+ .../comprobante-1771048583121-853617536.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771052177116-543489958.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771055185449-323385438.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771055681677-414294148.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771056456367-45252183.jpeg        |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771056486728-267256993.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771059126731-473695994.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771059618729-289856712.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771095697908-244422751.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771099927577-85504896.pdf         |  Bin [31m0[m -> [32m56820[m bytes
+ .../comprobante-1771100671941-696437966.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771101220155-139705600.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771101731025-894684727.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771113343198-636350242.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771114159934-926386103.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ .../comprobante-1771221011539-959225605.jpeg       |  Bin [31m0[m -> [32m124675[m bytes
+ backend/src/app.js                                 |   17 [32m+[m
+ backend/src/config.js                              |    5 [32m+[m
+ backend/src/config/db.js                           |   11 [32m+[m
+ backend/src/config/mercadopago.cjs                 |   31 [32m+[m
+ backend/src/config/mercadopago.js                  |   16 [32m+[m
+ backend/src/controllers/admin.controllers.js       |   22 [32m+[m
+ backend/src/controllers/carrusel.controllers.js    |   58 [32m+[m
+ .../src/controllers/configuracion.controllers.js   |  103 [32m+[m
+ backend/src/controllers/pagoController.js          |   89 [32m+[m
+ backend/src/controllers/productos.controllers.js   |   62 [32m+[m
+ backend/src/controllers/servicioController.js      |   55 [32m+[m
+ backend/src/controllers/servicios.controllers.js   |   67 [32m+[m
+ backend/src/controllers/turnos.controllers.js      |  519 [32m++[m
+ backend/src/controllers/usuarioController.js       |   58 [32m+[m
+ backend/src/controllers/usuarios.controllers.js    |  199 [32m+[m
+ backend/src/database/dbConnection.js               |   26 [32m+[m
+ backend/src/emailTemplates/comprobanteTurno.js     |   81 [32m+[m
+ backend/src/emailTemplates/recuperarPassword.js    |   60 [32m+[m
+ backend/src/helpers/emailSender.cjs                |  234 [32m+[m
+ backend/src/helpers/emailSender.js                 |    1 [32m+[m
+ backend/src/helpers/ensureDefaultAdmin.js          |   36 [32m+[m
+ backend/src/helpers/resultadoValidacion.js         |   10 [32m+[m
+ backend/src/helpers/validarProducto.js             |    8 [32m+[m
+ backend/src/helpers/validarUsuario.js              |   17 [32m+[m
+ backend/src/helpers/webhookHelper.js               |   87 [32m+[m
+ backend/src/middleware/uploadComprobante.js        |   34 [32m+[m
+ backend/src/models/Pago.js                         |   10 [32m+[m
+ backend/src/models/Servicio.js                     |   11 [32m+[m
+ backend/src/models/Usuario.js                      |   21 [32m+[m
+ backend/src/models/carruselSchema.js               |   12 [32m+[m
+ backend/src/models/configuracionSchema.js          |   12 [32m+[m
+ backend/src/models/productosSchema.js              |   12 [32m+[m
+ backend/src/models/serviciosSchema.js              |   27 [32m+[m
+ backend/src/models/turnosSchema.js                 |   98 [32m+[m
+ backend/src/models/usuariosSchema.js               |   72 [32m+[m
+ backend/src/routes/admin.routes.js                 |   11 [32m+[m
+ backend/src/routes/carrusel.routes.js              |    9 [32m+[m
+ backend/src/routes/configuracion.routes.js         |   13 [32m+[m
+ backend/src/routes/pagoRoutes.js                   |    8 [32m+[m
+ backend/src/routes/productos.routes.js             |   15 [32m+[m
+ backend/src/routes/servicios.js                    |   12 [32m+[m
+ backend/src/routes/servicios.routes.js             |   18 [32m+[m
+ backend/src/routes/turnos.routes.js                |   55 [32m+[m
+ backend/src/routes/usuarios.js                     |   11 [32m+[m
+ backend/src/routes/usuarios.routes.js              |   30 [32m+[m
+ backend/src/routes/webhook.routes.js               |   33 [32m+[m
+ backend/src/server.js                              |   10 [32m+[m
+ db.json                                            |  296 [32m+[m
+ index.html                                         |   16 [32m+[m
+ install.bat                                        |   24 [32m+[m
+ package-lock.json                                  | 3869 [32m+++++++++++++[m
+ package.json                                       |   33 [32m+[m
+ public/carrusel1.jpg                               |  Bin [31m0[m -> [32m987813[m bytes
+ public/carrusel2.jpg                               |  Bin [31m0[m -> [32m1192744[m bytes
+ public/carrusel3.jpg                               |  Bin [31m0[m -> [32m727366[m bytes
+ public/carrusel4.jpg                               |  Bin [31m0[m -> [32m1151574[m bytes
+ public/image copy 2.png                            |  Bin [31m0[m -> [32m66019[m bytes
+ public/image copy 3.png                            |  Bin [31m0[m -> [32m276601[m bytes
+ public/image copy.png                              |  Bin [31m0[m -> [32m357722[m bytes
+ public/image.png                                   |  Bin [31m0[m -> [32m211902[m bytes
+ public/imagendegmail.png                           |
