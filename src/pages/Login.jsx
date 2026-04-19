@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
@@ -47,18 +48,25 @@ const Login = () => {
     const validationErrors = validate();
     setFieldErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
+    // Chequeo inmediato de conexión
+    if (!window.navigator.onLine) {
+      setError('Sin conexión a internet.');
+      toast.error('Sin conexión a internet.');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
     setLoading(true);
     const MIN_SECONDS = 4; // Cambia este valor para el mínimo de segundos
     const start = Date.now();
     try {
-      const success = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password);
       const elapsed = Date.now() - start;
       const wait = Math.max(0, MIN_SECONDS * 1000 - elapsed);
-      if (success) {
+      if (result.success) {
         const user = JSON.parse(localStorage.getItem('user'));
         setTimeout(() => {
           if (user && (user.rol === 'admin' || user.rol === 'superadmin')) {
-            navigate('/admin');
+            navigate('/admin/panel');
           } else {
             navigate('/mis-turnos');
           }
@@ -66,7 +74,7 @@ const Login = () => {
         }, wait);
       } else {
         setTimeout(() => {
-          setError('Email o contraseña incorrectos.');
+          setError(result.message || 'Email o contraseña incorrectos.');
           setLoading(false);
         }, wait);
       }
@@ -88,12 +96,12 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
           <div className="form-group">
-            <label id="email" className="form-label">Gmail</label>
+            <label id="email" className="form-label">Email</label>
             <input
               type="email"
               name="email"
               className="form-input"
-              placeholder="tu@email.com"
+              placeholder="tu@correo.com"
               value={formData.email}
               onChange={handleChange}
               required

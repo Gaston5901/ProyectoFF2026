@@ -1,16 +1,20 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { serviciosAPI, horariosAPI } from '../services/api';
 // import { crearPreferencia as crearPreferenciaMP } from '../services/mercadoPago';
 import { useCarrito } from '../store/useCarritoStore';
 import { useAuth } from '../context/AuthContext';
-import { Calendar, Clock, Check } from 'lucide-react';
+import { Calendar, Clock, Check, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { format, addDays, startOfToday } from 'date-fns';
 import { toast } from 'react-toastify';
 import './ReservarTurno.css';
 
 
+
+
+const ITEMS_POR_PAGINA_SERVICIOS = 6;
+const MAX_PAGE_BUTTONS = 10;
 
 const ReservarTurno = () => {
   const fechaInicioRef = useRef(null);
@@ -31,6 +35,8 @@ const ReservarTurno = () => {
   const [paso, setPaso] = useState(1);
   const isGuest = !user;
   const [slowConnection, setSlowConnection] = useState(false);
+  const [filtroServicio, setFiltroServicio] = useState('todos');
+  const [paginaServicios, setPaginaServicios] = useState(1);
 
   useEffect(() => {
     cargarServicios();
@@ -62,6 +68,89 @@ const ReservarTurno = () => {
       setLoading(false);
     }
   };
+
+  const serviciosOrdenados = useMemo(() => {
+    const list = Array.isArray(servicios) ? [...servicios] : [];
+    list.sort((a, b) => String(a?.nombre || '').localeCompare(String(b?.nombre || ''), 'es', { sensitivity: 'base' }));
+    return list;
+  }, [servicios]);
+
+  const serviciosFiltrados = useMemo(() => {
+    const list = serviciosOrdenados;
+    if (filtroServicio === 'todos') return list;
+    return list.filter((s) => String(s?.id || s?._id) === String(filtroServicio));
+  }, [serviciosOrdenados, filtroServicio]);
+
+  useEffect(() => {
+    setPaginaServicios(1);
+  }, [filtroServicio]);
+
+  const totalPaginasServicios = Math.max(1, Math.ceil(serviciosFiltrados.length / ITEMS_POR_PAGINA_SERVICIOS));
+  const startServicios = (paginaServicios - 1) * ITEMS_POR_PAGINA_SERVICIOS;
+  const endServicios = startServicios + ITEMS_POR_PAGINA_SERVICIOS;
+  const serviciosPaginados = serviciosFiltrados.slice(startServicios, endServicios);
+  const showPagerServicios = serviciosFiltrados.length > ITEMS_POR_PAGINA_SERVICIOS;
+
+  const scrollToTop = () => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    });
+  };
+
+  const goToPageServicios = (nextPage) => {
+    const bounded = Math.min(totalPaginasServicios, Math.max(1, Number(nextPage) || 1));
+    setPaginaServicios(bounded);
+    scrollToTop();
+  };
+
+  const pagesToShowServicios = useMemo(() => {
+    const blockStart = Math.floor((paginaServicios - 1) / MAX_PAGE_BUTTONS) * MAX_PAGE_BUTTONS + 1;
+    const blockEnd = Math.min(totalPaginasServicios, blockStart + MAX_PAGE_BUTTONS - 1);
+    return Array.from({ length: blockEnd - blockStart + 1 }, (_, i) => blockStart + i);
+  }, [paginaServicios, totalPaginasServicios]);
+
+  const blockStartServicios = pagesToShowServicios[0] || 1;
+  const blockEndServicios = pagesToShowServicios[pagesToShowServicios.length - 1] || 1;
+
+  const renderPagerServicios = (ariaLabel) => (
+    <div className="reserva-servicios-pager" aria-label={ariaLabel}>
+      <button
+        type="button"
+        className="reserva-page-btn"
+        onClick={() => goToPageServicios(paginaServicios - 1)}
+        disabled={paginaServicios === 1}
+        aria-label="Página anterior"
+      >
+        <ChevronLeft size={18} />
+      </button>
+
+      <div className="reserva-page-numbers" role="group" aria-label="Páginas">
+        {blockStartServicios > 1 && <span className="reserva-page-ellipsis">…</span>}
+        {pagesToShowServicios.map((p) => (
+          <button
+            key={p}
+            type="button"
+            className={`reserva-page-number-btn${p === paginaServicios ? ' is-active' : ''}`}
+            onClick={() => goToPageServicios(p)}
+            aria-current={p === paginaServicios ? 'page' : undefined}
+          >
+            {p}
+          </button>
+        ))}
+        {blockEndServicios < totalPaginasServicios && <span className="reserva-page-ellipsis">…</span>}
+      </div>
+
+      <button
+        type="button"
+        className="reserva-page-btn"
+        onClick={() => goToPageServicios(paginaServicios + 1)}
+        disabled={paginaServicios === totalPaginasServicios}
+        aria-label="Página siguiente"
+      >
+        <ChevronRight size={18} />
+      </button>
+    </div>
+  );
 
   const cargarEstadoHorarios = async (fecha) => {
     setLoadingHorarios(true);
@@ -297,10 +386,33 @@ const ReservarTurno = () => {
               Seleccioná el servicio
             </h2>
 
+            <div className="reserva-servicios-toolbar" aria-label="Filtro de servicios">
+              <div className="reserva-servicios-filtros" aria-label="Filtro por servicio">
+                <span className="reserva-servicios-filtros-icon" aria-hidden="true">
+                  <Filter size={16} />
+                </span>
+                <select
+                  className="reserva-servicios-select"
+                  value={filtroServicio}
+                  onChange={(e) => setFiltroServicio(e.target.value)}
+                  aria-label="Filtrar por servicio"
+                >
+                  <option value="todos">Filtro</option>
+                  {serviciosOrdenados.map((s, idx) => (
+                    <option key={s?.id || s?._id || idx} value={s?.id || s?._id}>
+                      {s?.nombre || 'Servicio'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {showPagerServicios && renderPagerServicios('Paginación servicios')}
+            </div>
+
             <div className="servicios-grid-reserva">
-              {servicios.map((servicio) => (
+              {serviciosPaginados.map((servicio) => (
                 <div
-                  key={servicio.id}
+                  key={servicio.id || servicio._id}
                   className="servicio-card-reserva"
                   onClick={() => seleccionarServicio(servicio)}
                 >
@@ -316,6 +428,12 @@ const ReservarTurno = () => {
                 </div>
               ))}
             </div>
+
+            {showPagerServicios && (
+              <div className="reserva-servicios-bottom-pager">
+                {renderPagerServicios('Paginación servicios (abajo)')}
+              </div>
+            )}
           </div>
         )}
 

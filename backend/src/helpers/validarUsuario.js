@@ -13,5 +13,7 @@ export const validarUsuarioUpdate = [
   body("email").optional().notEmpty().isEmail(),
   body("telefono").optional().notEmpty().isLength({ min: 6 }),
   body("password").optional().notEmpty().isLength({ min: 6 }),
-  body("rol").optional().isIn(["cliente", "usuario", "admin", "superadmin"])
+  body("rol").optional().isIn(["cliente", "usuario", "admin", "superadmin"]),
+  body("suspendido").optional().isBoolean(),
+  body("oculto").optional().isBoolean(),
 ];

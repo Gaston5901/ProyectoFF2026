@@ -71,6 +71,9 @@ export const crearTurnoTransferencia = async (req, res) => {
     // Datos del body y archivo
     const { email, nombre, telefono, servicio, fecha, hora, comentario, montoTotal } = req.body;
     const comprobanteFile = req.file;
+    if (req.fileValidationError) {
+      return res.status(400).json({ mensaje: req.fileValidationError });
+    }
     if (!comprobanteFile) {
       console.log('FALTA comprobante');
       return res.status(400).json({ mensaje: 'Debe adjuntar un comprobante de transferencia.' });
@@ -179,7 +182,7 @@ export const devolverSenia = async (req, res) => {
   try {
     const turno = await TurnosModel.findByIdAndUpdate(
       req.params.id,
-      { seniaDevuelta: true, estado: 'cancelado' },
+      { seniaDevuelta: true, estado: 'devuelto', registroEstadistica: 'ninguno' },
       { new: true }
     );
     if (!turno) return res.status(404).json({ mensaje: "Turno no encontrado" });
@@ -201,7 +204,7 @@ export const devolverSenia = async (req, res) => {
 import TurnosModel from "../models/turnosSchema.js";
 import UsuariosModel from "../models/usuariosSchema.js";
 import ServiciosModel from "../models/serviciosSchema.js";
-import { enviarComprobanteTurno } from "../helpers/emailSender.cjs";
+import { enviarComprobanteTurno, enviarTurnoReprogramado } from "../helpers/emailSender.cjs";
 
 export const crearTurno = async (req, res) => {
   try {
@@ -210,6 +213,7 @@ export const crearTurno = async (req, res) => {
     // Buscar usuario por email
     const emailNorm = String(email || '').toLowerCase().trim();
     let usuarioDoc = await UsuariosModel.findOne({ email: emailNorm });
+    const usuarioCreadoAhora = !usuarioDoc;
     let usuarioId;
     let passwordGenerada = null;
     if (!usuarioDoc) {
@@ -359,7 +363,7 @@ export const crearTurno = async (req, res) => {
     }];
     // Usar passwordGenerada si viene en el body (admin) o si se generó en este endpoint
     let extras = '';
-    const passwordParaEmail = req.body.passwordGenerada || passwordGenerada;
+    const passwordParaEmail = usuarioCreadoAhora ? (req.body.passwordGenerada || passwordGenerada) : null;
     if (passwordParaEmail) {
       extras = {
         usuario: usuarioDoc?.email || emailNorm || email,
@@ -424,6 +428,10 @@ export const obtenerTurnos = async (req, res) => {
       obj.servicioId = obj.servicio?._id || obj.servicio;
       // Si usuario es objeto, poner usuarioId
       obj.usuarioId = obj.usuario?._id || obj.usuario;
+      // Asegurar datos del cliente (compat para pantallas admin sin /usuarios)
+      obj.nombre = obj.nombre || obj.usuario?.nombre || '';
+      obj.telefono = obj.telefono || obj.usuario?.telefono || '';
+      obj.email = obj.email || obj.usuario?.email || '';
       // Formatear fecha a yyyy-MM-dd
       const fechaObj = new Date(obj.fecha);
       obj.fecha = fechaObj.toISOString().slice(0,10);
@@ -450,6 +458,9 @@ export const obtenerTurno = async (req, res) => {
     delete obj._id;
     obj.servicioId = obj.servicio?._id || obj.servicio;
     obj.usuarioId = obj.usuario?._id || obj.usuario;
+    obj.nombre = obj.nombre || obj.usuario?.nombre || '';
+    obj.telefono = obj.telefono || obj.usuario?.telefono || '';
+    obj.email = obj.email || obj.usuario?.email || '';
     const fechaObj = new Date(obj.fecha);
     obj.fecha = fechaObj.toISOString().slice(0,10);
     obj.hora = obj.hora || '';
@@ -463,14 +474,119 @@ export const obtenerTurno = async (req, res) => {
 
 export const actualizarTurno = async (req, res) => {
   try {
-    const turno = await TurnosModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const turno = await TurnosModel.findById(req.params.id);
     if (!turno) return res.status(404).json({ mensaje: "Turno no encontrado" });
-    if (!turno) return res.status(404).json({ mensaje: "Turno no encontrado" });
+
+    const oldFechaStr = turno.fecha ? new Date(turno.fecha).toISOString().slice(0, 10) : '';
+    const oldHoraStr = String(turno.hora || '').trim();
+
+    const servicioId = req.body?.servicio || turno.servicio;
+    const targetFechaStr = (req.body?.fecha || oldFechaStr || '').toString().slice(0, 10);
+    let targetHoraStr = String(req.body?.hora ?? oldHoraStr ?? '').trim();
+
+    // Normalizar HH:MM
+    if (/^\d{1,2}:\d{1,2}$/.test(targetHoraStr)) {
+      const [hh, mm] = targetHoraStr.split(':');
+      targetHoraStr = hh.padStart(2, '0') + ':' + mm.padStart(2, '0');
+    }
+
+    const fechaChanged = Boolean(req.body?.fecha) && targetFechaStr !== oldFechaStr;
+    const horaChanged = Boolean(req.body?.hora) && targetHoraStr !== oldHoraStr;
+    const willValidateHorario = Boolean(targetFechaStr && targetHoraStr) && (fechaChanged || horaChanged);
+
+    if (willValidateHorario) {
+      const ConfiguracionModel = (await import("../models/configuracionSchema.js")).default;
+      const config = await ConfiguracionModel.findOne();
+      const horariosPorDia = config?.horariosPorDia || {};
+
+      const day = new Date(targetFechaStr + 'T00:00:00').getDay();
+      const limpiarHora = (h) => {
+        let hora = String(h).trim();
+        if (/^\d{1,2}:\d{1,2}$/.test(hora)) {
+          const [hh, mm] = hora.split(':');
+          hora = hh.padStart(2, '0') + ':' + mm.padStart(2, '0');
+        }
+        return hora;
+      };
+
+      const normales = Array.isArray(horariosPorDia[String(day)]) ? horariosPorDia[String(day)] : [];
+      const extrasFecha = Array.isArray(horariosPorDia[targetFechaStr]) ? horariosPorDia[targetFechaStr] : [];
+      const horariosValidos = Array.from(new Set([...normales, ...extrasFecha].map(limpiarHora)));
+
+      if (!horariosValidos.includes(targetHoraStr)) {
+        return res.status(409).json({ mensaje: `El horario ${targetHoraStr} no está disponible para ese día.` });
+      }
+
+      const inicioDia = new Date(targetFechaStr + 'T00:00:00');
+      const finDia = new Date(targetFechaStr + 'T23:59:59');
+
+      const ocupado = await TurnosModel.findOne({
+        _id: { $ne: turno._id },
+        fecha: { $gte: inicioDia, $lte: finDia },
+        hora: targetHoraStr,
+        estado: { $in: ["pendiente", "confirmado", "en_proceso"] },
+        $or: [
+          { estadoTransferencia: { $exists: false } },
+          { estadoTransferencia: { $ne: 'rechazado' } },
+        ],
+      });
+      if (ocupado) {
+        return res.status(409).json({ mensaje: `El horario ${targetHoraStr} ya está reservado para esa fecha.` });
+      }
+    }
+
+    // Aplicar update
+    if (req.body?.servicio) turno.servicio = servicioId;
+    if (req.body?.fecha) turno.fecha = targetFechaStr;
+    if (req.body?.hora) turno.hora = targetHoraStr;
+    if (req.body?.email != null) turno.email = req.body.email;
+    if (req.body?.nombre != null) turno.nombre = req.body.nombre;
+    if (req.body?.telefono != null) turno.telefono = req.body.telefono;
+
+    // Campos de estado/estadística usados por pantallas admin
+    if (req.body?.estado != null) turno.estado = req.body.estado;
+    if (req.body?.registroEstadistica != null) turno.registroEstadistica = req.body.registroEstadistica;
+    if (req.body?.seniaDevuelta != null) turno.seniaDevuelta = Boolean(req.body.seniaDevuelta);
+
+    // Montos (si se ajustan manualmente desde admin)
+    if (req.body?.montoPagado != null) turno.montoPagado = Number(req.body.montoPagado) || 0;
+    if (req.body?.montoTotal != null) turno.montoTotal = Number(req.body.montoTotal) || 0;
+
+    await turno.save();
+
+    // Email de reprogramación (no bloquear si falla)
+    if ((fechaChanged || horaChanged) && turno.email) {
+      try {
+        const servicioObj = await ServiciosModel.findById(servicioId);
+        const montoTotal = Number(turno.montoTotal || servicioObj?.precio || 0);
+        const montoPagado = Number(turno.montoPagado || 0);
+        const restoAPagar = Math.max(0, montoTotal - montoPagado);
+        await enviarTurnoReprogramado({
+          to: turno.email,
+          nombre: turno.nombre,
+          servicio: servicioObj?.nombre || 'Servicio',
+          fechaAnterior: oldFechaStr,
+          horaAnterior: oldHoraStr,
+          fechaNueva: targetFechaStr,
+          horaNueva: targetHoraStr,
+          montoTotal,
+          montoPagado,
+          restoAPagar,
+          pagoId: turno.pagoId,
+        });
+      } catch (mailErr) {
+        console.error('Error enviando mail de reprogramación:', mailErr);
+      }
+    }
+
     const obj = turno.toObject();
     obj.id = obj._id;
     delete obj._id;
     obj.servicioId = obj.servicio?._id || obj.servicio;
     obj.usuarioId = obj.usuario?._id || obj.usuario;
+    obj.nombre = obj.nombre || obj.usuario?.nombre || '';
+    obj.telefono = obj.telefono || obj.usuario?.telefono || '';
+    obj.email = obj.email || obj.usuario?.email || '';
     const fechaObj = new Date(obj.fecha);
     obj.fecha = fechaObj.toISOString().slice(0,10);
     obj.hora = obj.hora || '';
@@ -503,6 +619,9 @@ export const obtenerTurnosPorUsuario = async (req, res) => {
       delete obj._id;
       obj.servicioId = obj.servicio?._id || obj.servicio;
       obj.usuarioId = obj.usuario?._id || obj.usuario;
+      obj.nombre = obj.nombre || '';
+      obj.telefono = obj.telefono || '';
+      obj.email = obj.email || '';
       const fechaObj = new Date(obj.fecha);
       obj.fecha = fechaObj.toISOString().slice(0,10);
       obj.hora = obj.hora || '';

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { serviciosAPI } from '../../services/api';
-import { Package, Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Package, Plus, Edit2, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import './Admin.css';
@@ -11,6 +11,7 @@ const ServiciosAdmin = () => {
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
+  const [page, setPage] = useState(1);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [formData, setFormData] = useState({
@@ -102,10 +103,31 @@ const ServiciosAdmin = () => {
     setMostrarForm(false);
   };
 
-  const serviciosFiltrados = servicios.filter((s) =>
-    s.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    s.descripcion.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  useEffect(() => {
+    setPage(1);
+  }, [busqueda]);
+
+  const serviciosFiltrados = servicios
+    .filter((s) =>
+      s.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      s.descripcion.toLowerCase().includes(busqueda.toLowerCase())
+    )
+    .slice()
+    .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+
+  const perPage = 6;
+  const total = serviciosFiltrados.length;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages));
+  }, [totalPages]);
+
+  const start = (page - 1) * perPage;
+  const end = start + perPage;
+  const paginados = serviciosFiltrados.slice(start, end);
+  const mostrandoDesde = total === 0 ? 0 : start + 1;
+  const mostrandoHasta = Math.min(end, total);
 
   if (loading) {
     return (
@@ -148,28 +170,96 @@ const ServiciosAdmin = () => {
           editando={editando}
         />
 
-        <div className="servicios-grid">
-          {serviciosFiltrados.length > 0 ? (
-            serviciosFiltrados.map((servicio) => (
-              <div key={servicio.id} className="servicio-admin-card">
-                <div className="servicio-admin-info">
-                  <h3>{servicio.nombre}</h3>
-                  <p className="servicio-desc">{servicio.descripcion}</p>
-                  <div className="servicio-detalles">
-                    <p><strong>Precio:</strong> ${servicio.precio.toLocaleString()}</p>
-                    <p><strong>Duración:</strong> {servicio.duracion} min</p>
-                  </div>
-                </div>
-                <div className="servicio-admin-acciones">
-                  <button className="btn-accion editar" onClick={() => handleEditar(servicio)} title="Editar">
-                    <Edit2 size={18} />
-                  </button>
-                  <button className="btn-accion cancelar" onClick={() => handleEliminar(servicio.id)} title="Eliminar">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+        <div className="servicios-table-frame">
+          <div className="turnos-list-header">
+            <div className="turnos-summary">
+              Mostrando {mostrandoDesde}-{mostrandoHasta} de {total}
+            </div>
+            {totalPages > 1 && (
+              <div className="turnos-pager" aria-label="Paginación servicios">
+                <button
+                  type="button"
+                  className="turnos-page-btn"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <span className="turnos-page-indicator">
+                  {page}/{totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="turnos-page-btn"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  aria-label="Página siguiente"
+                >
+                  <ChevronRight size={18} />
+                </button>
               </div>
-            ))
+            )}
+          </div>
+
+          {total > 0 ? (
+            <div className="turnos-table servicios-table" role="table" aria-label="Listado de servicios">
+              <div className="turnos-row turnos-row-header" role="row">
+                <div className="turnos-cell cell-servicio" role="columnheader">
+                  <span className="turnos-num turnos-num-header">N°</span>
+                  <span>Servicio</span>
+                </div>
+                <div className="turnos-cell cell-precio" role="columnheader">Precio</div>
+                <div className="turnos-cell cell-duracion" role="columnheader">Duración</div>
+                <div className="turnos-cell cell-opciones" role="columnheader">Acciones</div>
+              </div>
+
+              {paginados.map((servicio, idx) => {
+                const rowNum = start + idx + 1;
+                return (
+                  <div key={servicio.id} className="turnos-row" role="row">
+                    <div className="turnos-cell cell-servicio" role="cell">
+                      <span className="turnos-num">{rowNum}</span>
+                      <div className="servicios-nombre-wrap">
+                        <span className="turnos-servicio-nombre">{servicio.nombre}</span>
+                        <span className="servicios-desc">{servicio.descripcion}</span>
+                      </div>
+                    </div>
+
+                    <div className="turnos-cell cell-precio" role="cell">
+                      <span className="servicios-price">${servicio.precio?.toLocaleString?.() ?? servicio.precio}</span>
+                    </div>
+
+                    <div className="turnos-cell cell-duracion" role="cell">
+                      <span className="servicios-duration">{servicio.duracion} min</span>
+                    </div>
+
+                    <div className="turnos-cell cell-opciones" role="cell">
+                      <div className="servicios-actions">
+                        <button
+                          className="turnos-editar-btn servicios-action-btn"
+                          onClick={() => handleEditar(servicio)}
+                          title="Editar"
+                          aria-label="Editar"
+                          type="button"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          className="turnos-editar-btn servicios-action-btn is-delete"
+                          onClick={() => handleEliminar(servicio.id)}
+                          title="Eliminar"
+                          aria-label="Eliminar"
+                          type="button"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <p className="no-data">No se encontraron servicios</p>
           )}

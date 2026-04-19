@@ -22,7 +22,7 @@ const turnoSchema = new mongoose.Schema({
   },
     estado: {
       type: String,
-      enum: ["pendiente", "en_proceso", "confirmado", "cancelado", "realizado", "completado", "rechazado"],
+      enum: ["pendiente", "en_proceso", "confirmado", "cancelado", "devuelto", "realizado", "completado", "rechazado"],
       default: "pendiente"
     },
   pagoId: {

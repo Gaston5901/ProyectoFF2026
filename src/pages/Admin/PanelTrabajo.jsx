@@ -62,11 +62,13 @@ function ExpiradoAcciones({ turno, onCompletar, onDevolverSenia }) {
   );
 }
 import { useEffect, useState } from 'react';
-import { turnosAPI, serviciosAPI, usuariosAPI } from '../../services/api';
+import { turnosAPI, serviciosAPI } from '../../services/api';
 import { CalendarDays, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { toast } from 'react-toastify';
 import './Admin.css';
+
+const getTurnoDisplayId = (turno) => turno?.pagoId || turno?.id || '';
 
 const PanelTrabajo = () => {
   const [loading, setLoading] = useState(true);
@@ -82,14 +84,12 @@ const PanelTrabajo = () => {
 
   const cargar = async () => {
     try {
-      const [turnosRes, serviciosRes, usuariosRes] = await Promise.all([
+      const [turnosRes, serviciosRes] = await Promise.all([
         turnosAPI.getAll(),
         serviciosAPI.getAll(),
-        usuariosAPI.getAll(),
       ]);
       const serviciosMap = {}; serviciosRes.data.forEach(s => serviciosMap[s.id] = s);
-      const usuariosMap = {}; usuariosRes.data.forEach(u => usuariosMap[u.id] = u);
-      setServicios(serviciosMap); setUsuarios(usuariosMap);
+      setServicios(serviciosMap); setUsuarios({});
 
       const todos = turnosRes.data;
       setTurnosHoy(todos.filter(t => t.fecha === hoyStr && t.estado !== 'completado' && t.estado !== 'devuelto' && t.estado !== 'cancelado' && t.estado !== 'en_proceso').sort((a,b)=>a.hora.localeCompare(b.hora)));
@@ -114,7 +114,7 @@ const PanelTrabajo = () => {
           <div>
             <div style={{fontWeight:'bold',color:'#e53935'}}>{t.hora} - {s?.nombre}</div>
             <div style={{fontSize:'1rem',color:'#ad1457'}}>{nombreUsuario}{telefonoUsuario ? ` / ${telefonoUsuario}` : ''}</div>
-            <div className="turno-id" style={{fontSize:'0.9em',color:'#888'}}>ID: {t.pagoId}</div>
+            <div className="turno-id" style={{fontSize:'0.9em',color:'#888'}}>ID pago: {getTurnoDisplayId(t)}</div>
             <div className="turno-precio" style={{fontWeight:'bold',color:'#38b000',marginTop:'2px'}}>Total: ${precioTotal}</div>
           </div>
           <div className="turno-acciones" style={{display:'flex',gap:'8px'}}>
@@ -214,7 +214,7 @@ const PanelTrabajo = () => {
           <div className="turno-detalles">
             <h4>{s?.nombre}</h4>
             <p>{nombreUsuario}{telefonoUsuario ? ` / ${telefonoUsuario}` : ''}</p>
-            <p className="turno-id">ID: {t.pagoId}</p>
+            <p className="turno-id">ID pago: {getTurnoDisplayId(t)}</p>
             <p className="turno-precio" style={{fontWeight:'bold',color:'#38b000',marginTop:'2px'}}>Total: ${precioTotal}</p>
           </div>
           <div className="turno-acciones" style={{display:'flex',gap:'8px'}}>

@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { turnosAPI, serviciosAPI, usuariosAPI, horariosAPI } from '../../services/api';
-import api from '../../services/api';
-import { Calendar, Check, X, Plus, Search } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { turnosAPI, serviciosAPI, horariosAPI, usuariosAPI } from '../../services/api';
+import { Calendar, Plus, Search, ChevronLeft, ChevronRight, Pencil, ChevronDown, Wrench, MoreVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import HorarioSelectorAdmin from './HorarioSelectorAdmin';
 import { toast } from 'react-toastify';
@@ -28,23 +27,58 @@ const Turnos = () => {
     setEditando(false);
   };
 
+  // Reprogramación (separado de editar)
+  const [reprogramando, setReprogramando] = useState(false);
+  const [turnoReprogramar, setTurnoReprogramar] = useState(null);
+  const [reprog, setReprog] = useState({ fecha: '', hora: '' });
+  const [guardandoReprog, setGuardandoReprog] = useState(false);
+
+  const abrirReprogramar = (turno) => {
+    setTurnoReprogramar(turno);
+    setReprog({ fecha: '', hora: '' });
+    setReprogramando(true);
+  };
+
+  const cerrarReprogramar = () => {
+    setTurnoReprogramar(null);
+    setReprog({ fecha: '', hora: '' });
+    setReprogramando(false);
+  };
+
+  const confirmarReprogramacion = async () => {
+    if (!turnoReprogramar || !reprog.fecha || !reprog.hora) return;
+    if (guardandoReprog) return;
+    setGuardandoReprog(true);
+    try {
+      await turnosAPI.update(turnoReprogramar.id, {
+        servicio: turnoReprogramar.servicioId,
+        fecha: reprog.fecha,
+        hora: reprog.hora,
+        email: turnoReprogramar.email,
+        nombre: turnoReprogramar.nombre,
+        telefono: turnoReprogramar.telefono,
+      });
+      toast.success('Turno reprogramado correctamente');
+      cerrarReprogramar();
+      await cargarDatos();
+    } catch (error) {
+      const msg = error?.response?.data?.mensaje || 'Error al reprogramar el turno';
+      toast.error(msg);
+      console.error(error);
+    } finally {
+      setGuardandoReprog(false);
+    }
+  };
+
   // Guardar cambios de edición
   const guardarEdicionTurno = async (e) => {
     e.preventDefault();
     if (guardandoEdicion) return;
     setGuardandoEdicion(true);
     try {
-      // Actualiza usuario si cambió
-      await usuariosAPI.update(turnoEditar.usuarioId, {
-        nombre: turnoEditar.nombre,
-        telefono: turnoEditar.telefono,
-        email: turnoEditar.email,
-        rol: turnoEditar.rol || 'cliente',
-      });
       // Actualiza turno con todos los datos relevantes
       await turnosAPI.update(turnoEditar.id, {
-        usuarioId: turnoEditar.usuarioId,
-        servicioId: parseInt(turnoEditar.servicioId),
+        servicio: turnoEditar.servicioId,
         fecha: turnoEditar.fecha,
         hora: turnoEditar.hora,
         email: turnoEditar.email,
@@ -122,12 +156,18 @@ const Turnos = () => {
   const [turnos, setTurnos] = useState([]);
   const [servicios, setServicios] = useState({});
   const [usuarios, setUsuarios] = useState({});
+  const [usuariosList, setUsuariosList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
+  const [turnosPage, setTurnosPage] = useState(1);
+  const [pagosOpenId, setPagosOpenId] = useState(null);
+  const [mobileMenuOpenId, setMobileMenuOpenId] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [creando, setCreando] = useState(false);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [emailComboOpen, setEmailComboOpen] = useState(false);
+  const emailComboBlurTimeoutRef = useRef(null);
   const [nuevoTurno, setNuevoTurno] = useState({
     nombre: '',
     telefono: '',
@@ -141,23 +181,46 @@ const Turnos = () => {
     cargarDatos();
   }, []);
 
+  useEffect(() => {
+    setTurnosPage(1);
+    setPagosOpenId(null);
+  }, [filtro, busqueda]);
+
   const cargarDatos = async () => {
     try {
       const [turnosRes, serviciosRes, usuariosRes] = await Promise.all([
         turnosAPI.getAll(),
         serviciosAPI.getAll(),
-        usuariosAPI.getAll(),
+        usuariosAPI.getAll().catch(() => ({ data: [] })),
       ]);
       const serviciosMap = {};
       serviciosRes.data.forEach((s) => {
         serviciosMap[s.id] = s;
       });
+
+      const usuariosArr = Array.isArray(usuariosRes?.data) ? usuariosRes.data : [];
       const usuariosMap = {};
-      usuariosRes.data.forEach((u) => {
-        usuariosMap[u.id] = u;
+      usuariosArr.forEach((u) => {
+        if (u?.id != null) usuariosMap[u.id] = u;
       });
+
       setServicios(serviciosMap);
       setUsuarios(usuariosMap);
+      setUsuariosList(
+        usuariosArr
+          .filter((u) => typeof u?.email === 'string' && u.email.trim() !== '')
+          .filter((u) => {
+            const rol = String(u?.rol || '').toLowerCase();
+            return rol !== 'admin' && rol !== 'superadmin';
+          })
+          .map((u) => ({
+            email: u.email.trim(),
+            nombre: typeof u?.nombre === 'string' ? u.nombre : '',
+            telefono: typeof u?.telefono === 'string' ? u.telefono : '',
+          }))
+          .filter((u, index, self) => self.findIndex((x) => x.email.toLowerCase() === u.email.toLowerCase()) === index)
+          .sort((a, b) => a.email.localeCompare(b.email))
+      );
       setTurnos(turnosRes.data.sort((a, b) => {
         if (a.fecha === b.fecha) {
           return a.hora.localeCompare(b.hora);
@@ -172,90 +235,33 @@ const Turnos = () => {
     }
   };
 
+  const usuariosEmailFiltrados = useMemo(() => {
+    if (!Array.isArray(usuariosList) || usuariosList.length === 0) return [];
+    const q = String(nuevoTurno.email || '').trim().toLowerCase();
+    const base = q
+      ? usuariosList.filter((u) => u.email.toLowerCase().includes(q))
+      : usuariosList;
+    return base.slice(0, 10);
+  }, [usuariosList, nuevoTurno.email]);
+
+  const seleccionarEmailExistente = (u) => {
+    setNuevoTurno((prev) => ({
+      ...prev,
+      email: u.email,
+      nombre: prev.nombre?.trim() ? prev.nombre : (u.nombre || ''),
+      telefono: prev.telefono?.trim() ? prev.telefono : (u.telefono || ''),
+    }));
+    setEmailComboOpen(false);
+  };
+
   const crearTurnoPresencial = async (e) => {
     e.preventDefault();
     if (creando) return;
     setCreando(true);
-    let passwordGenerada = null;
-    let usuario = Object.values(usuarios).find(u => u.email?.toLowerCase() === nuevoTurno.email?.toLowerCase());
-    let usuarioId = usuario?.id || usuario?._id;
-    // Solo enviar passwordGenerada si el usuario es completamente nuevo (creado en este flujo)
-    let usuarioEsNuevo = false;
     try {
-      if (!usuario) {
-        // Usuario nuevo creado por turno presencial
-        passwordGenerada = 'temporal123';
-        const nuevoUsuario = {
-          nombre: nuevoTurno.nombre?.trim() || '',
-          email: nuevoTurno.email?.trim() || '',
-          telefono: nuevoTurno.telefono?.trim() || '',
-          password: passwordGenerada,
-          rol: 'cliente',
-          creadoPorTurno: true
-        };
-        try {
-          const userRes = await usuariosAPI.create(nuevoUsuario);
-          const createdUser = userRes.data?.usuario || userRes.data;
-          usuario = {
-            ...createdUser,
-            id: createdUser?.id || createdUser?._id,
-            email: createdUser?.email || nuevoUsuario.email,
-            nombre: createdUser?.nombre || nuevoUsuario.nombre,
-            telefono: createdUser?.telefono || nuevoUsuario.telefono,
-            creadoPorTurno: true
-          };
-          usuarioId = usuario.id;
-          usuarioEsNuevo = true;
-        } catch (userError) {
-          if (userError?.response?.data?.errores) {
-            userError.response.data.errores.forEach(err => {
-              toast.error('Error usuario: ' + err.msg);
-            });
-          } else if (userError?.response?.data?.msg) {
-            toast.error('Error usuario: ' + userError.response.data.msg);
-          } else if (userError?.response?.data?.message) {
-            toast.error('Error usuario: ' + userError.response.data.message);
-          } else {
-            toast.error('Error al crear usuario');
-          }
-          console.error(userError);
-          setCreando(false);
-          return;
-        }
-      } else {
-        // Usuario ya existe: SIEMPRE usar los datos guardados
-        // Solo actualizar si el campo está vacío en la base y se ingresa uno nuevo
-        let nombreFinal = usuario.nombre || '';
-        let telefonoFinal = usuario.telefono || '';
-        let debeActualizar = false;
-        if (!nombreFinal && nuevoTurno.nombre?.trim()) {
-          nombreFinal = nuevoTurno.nombre.trim();
-          debeActualizar = true;
-        }
-        if (!telefonoFinal && nuevoTurno.telefono?.trim()) {
-          telefonoFinal = nuevoTurno.telefono.trim();
-          debeActualizar = true;
-        }
-        if (debeActualizar && usuarioId) {
-          try {
-            await usuariosAPI.update(usuarioId, {
-              nombre: nombreFinal,
-              telefono: telefonoFinal,
-            });
-            usuario = { ...usuario, nombre: nombreFinal, telefono: telefonoFinal };
-          } catch (err) {
-            toast.error('No se pudo actualizar el nombre/teléfono del usuario');
-          }
-        }
-        // Nunca enviar passwordGenerada si el usuario ya existía
-        usuarioEsNuevo = false;
-        passwordGenerada = undefined;
-      }
       const servicio = servicios[nuevoTurno.servicioId];
       const montoSeña = Math.round(servicio.precio * 0.5);
-      // Solo agregar passwordGenerada si el usuario es completamente nuevo
       const turnoData = {
-        usuario: usuario.id, // Mongo espera 'usuario' como ObjectId
         servicio: servicio.id || servicio._id, // Mongo espera 'servicio' como ObjectId
         fecha: nuevoTurno.fecha,
         hora: nuevoTurno.hora,
@@ -264,13 +270,12 @@ const Turnos = () => {
         montoPagado: montoSeña,
         montoTotal: servicio.precio,
         createdAt: new Date().toISOString(),
-        email: usuario.email,
-        nombre: usuario.nombre, // SIEMPRE el guardado
-        telefono: usuario.telefono // SIEMPRE el guardado
+        email: nuevoTurno.email?.trim() || '',
+        nombre: nuevoTurno.nombre?.trim() || '',
+        telefono: nuevoTurno.telefono?.trim() || '',
+        // Si el usuario no existe, el backend lo crea y usa esta clave como password inicial
+        passwordGenerada: 'temporal123'
       };
-      if (usuarioEsNuevo && passwordGenerada) {
-        turnoData.passwordGenerada = passwordGenerada;
-      }
       await turnosAPI.create(turnoData);
       // ENVÍO DE EMAILS eliminado para evitar errores 404
       toast.success('Turno creado exitosamente con seña pagada');
@@ -294,7 +299,8 @@ const Turnos = () => {
 
   // Declaraciones fuera de cualquier función/render
   const hoyStr = format(new Date(), 'yyyy-MM-dd');
-  const turnosFiltrados = turnos.filter((turno) => {
+  const turnosFiltrados = turnos
+  .filter((turno) => {
     // Filtrar turnos rechazados
     if (turno.estado === 'rechazado') return false;
     let esValido = false;
@@ -303,13 +309,57 @@ const Turnos = () => {
     } else if (filtro === 'hoy') {
       esValido = turno.fecha === hoyStr && turno.estado !== 'completado';
     }
+
+    const q = String(busqueda || '').trim().toLowerCase();
+    const isNumericQuery = /^\d+$/.test(q);
+
+    const turnoIdStr = String(turno?.id ?? '');
+    const pagoIdStr = String(turno?.pagoId ?? '').toLowerCase();
+    const idMatchExact = turnoIdStr === q || pagoIdStr === q;
+
+    const servicioNombreNorm = String(servicios[turno.servicioId]?.nombre || '').toLowerCase();
+    const servicioTokens = servicioNombreNorm
+      .split(/[\s/.,;:_\-]+/)
+      .filter(Boolean);
+    const qTokens = q.split(/\s+/).filter(Boolean);
+    const servicioMatch = qTokens.length === 0
+      ? true
+      : qTokens.every((qt) => servicioTokens.some((st) => st.startsWith(qt)));
+
     const cumpleBusqueda =
-      busqueda === '' ||
-      servicios[turno.servicioId]?.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      (usuarios[turno.usuarioId]?.nombre || turno.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) ||
-      turno.pagoId.toLowerCase().includes(busqueda.toLowerCase());
+      q === '' ||
+      (isNumericQuery
+        ? idMatchExact
+        : (
+          servicioMatch ||
+          String(usuarios[turno.usuarioId]?.nombre || turno.nombre || '').toLowerCase().includes(q) ||
+          String(turno.pagoId || turno.id || '').toLowerCase().includes(q)
+        ));
     return esValido && cumpleBusqueda;
+  })
+  .sort((a, b) => {
+    if (a.fecha === b.fecha) return (a.hora || '').localeCompare(b.hora || '');
+    return (a.fecha || '').localeCompare(b.fecha || '');
   });
+
+  const turnosPerPage = 6;
+  const turnosTotal = turnosFiltrados.length;
+  const turnosTotalPages = Math.max(1, Math.ceil(turnosTotal / turnosPerPage));
+
+  useEffect(() => {
+    setTurnosPage((p) => Math.min(p, turnosTotalPages));
+  }, [turnosTotalPages]);
+
+  const turnosStart = (turnosPage - 1) * turnosPerPage;
+  const turnosEnd = turnosStart + turnosPerPage;
+  const turnosPaginados = turnosFiltrados.slice(turnosStart, turnosEnd);
+  const mostrandoDesde = turnosTotal === 0 ? 0 : turnosStart + 1;
+  const mostrandoHasta = Math.min(turnosEnd, turnosTotal);
+
+  const mobileMenuTurno = useMemo(() => {
+    if (!mobileMenuOpenId) return null;
+    return turnos.find((t) => t.id === mobileMenuOpenId) || null;
+  }, [mobileMenuOpenId, turnos]);
 
   if (loading) {
     return (
@@ -336,7 +386,7 @@ const Turnos = () => {
             <Search size={20} />
             <input
               type="text"
-              placeholder="Buscar por servicio, cliente o ID..."
+              placeholder="Buscar por servicio, cliente o ID pago..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
             />
@@ -454,9 +504,9 @@ const Turnos = () => {
         </div>
 
         {mostrarFormulario && (
-          <div className="modal-turno-bg" style={{position:'fixed',top:0,left:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.35)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,animation:'fadeInBg .4s'}} onClick={() => { setMostrarFormulario(false); setNuevoTurno({ nombre: '', telefono: '', email: '', servicioId: '', fecha: '', hora: '' }); }}>
+          <div className="modal-turno-bg" style={{position:'fixed',top:0,left:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.35)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,animation:'fadeInBg .4s'}} onClick={() => { setMostrarFormulario(false); setEmailComboOpen(false); setNuevoTurno({ nombre: '', telefono: '', email: '', servicioId: '', fecha: '', hora: '' }); }}>
             <div className="modal-turno" style={{background:'linear-gradient(135deg,#fff 80%,#e7b2e6 100%)',borderRadius:'22px',boxShadow:'0 8px 40px rgba(180,0,90,0.18)',padding:'0',minWidth:'340px',maxWidth:'95vw',width:'520px',animation:'modalScaleIn .4s',position:'relative',display:'flex',flexDirection:'column',maxHeight:'90vh'}} onClick={e => e.stopPropagation()}>
-              <button style={{position:'absolute',top:18,right:18,background:'none',border:'none',fontSize:'1.3rem',color:'#d13fa0',cursor:'pointer',zIndex:2}} onClick={() => { setMostrarFormulario(false); setNuevoTurno({ nombre: '', telefono: '', email: '', servicioId: '', fecha: '', hora: '' }); }} title="Cerrar">×</button>
+              <button style={{position:'absolute',top:18,right:18,background:'none',border:'none',fontSize:'1.3rem',color:'#d13fa0',cursor:'pointer',zIndex:2}} onClick={() => { setMostrarFormulario(false); setEmailComboOpen(false); setNuevoTurno({ nombre: '', telefono: '', email: '', servicioId: '', fecha: '', hora: '' }); }} title="Cerrar">×</button>
               {/* Flujo igual al cliente: servicio, fecha, horario */}
               <div style={{padding:'38px 38px 0 38px',overflowY:'auto',flex:'1 1 auto'}}>
                 <h3 style={{marginBottom:'22px',fontWeight:'bold',fontSize:'1.35rem',color:'#d13fa0'}}>Crear Turno Presencial</h3>
@@ -543,7 +593,65 @@ const Turnos = () => {
                       </div>
                       <div className="form-group">
                         <label className="form-label" style={{color:'#222',fontWeight:'bold'}}>Email</label>
-                        <input type="email" className="form-input" style={{background:'#fff',border:'1.5px solid #d13fa0',borderRadius:'8px',padding:'10px',fontSize:'1rem',color:'#222'}} value={nuevoTurno.email} onChange={e => setNuevoTurno({ ...nuevoTurno, email: e.target.value })} required />
+                        <div className="admin-email-combo">
+                          <div className="admin-email-combo-inputWrap">
+                            <input
+                              type="email"
+                              className="form-input"
+                              style={{background:'#fff',border:'1.5px solid #d13fa0',borderRadius:'8px',padding:'10px',fontSize:'1rem',color:'#222'}}
+                              value={nuevoTurno.email}
+                              onChange={(e) => {
+                                setNuevoTurno({ ...nuevoTurno, email: e.target.value });
+                                setEmailComboOpen(true);
+                              }}
+                              onFocus={() => {
+                                if (emailComboBlurTimeoutRef.current) {
+                                  clearTimeout(emailComboBlurTimeoutRef.current);
+                                  emailComboBlurTimeoutRef.current = null;
+                                }
+                                setEmailComboOpen(true);
+                              }}
+                              onBlur={() => {
+                                emailComboBlurTimeoutRef.current = setTimeout(() => {
+                                  setEmailComboOpen(false);
+                                }, 140);
+                              }}
+                              placeholder="Seleccioná un email o escribí uno nuevo"
+                              required
+                              autoComplete="off"
+                            />
+                            <button
+                              type="button"
+                              className="admin-email-combo-toggle"
+                              title="Ver sugerencias"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => setEmailComboOpen((v) => !v)}
+                            >
+                              <ChevronDown size={18} />
+                            </button>
+                          </div>
+
+                          {emailComboOpen && usuariosEmailFiltrados.length > 0 && (
+                            <div className="admin-email-combo-dropdown" role="listbox">
+                              {usuariosEmailFiltrados.map((u) => (
+                                <button
+                                  key={u.email}
+                                  type="button"
+                                  className="admin-email-combo-option"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => seleccionarEmailExistente(u)}
+                                >
+                                  <span className="admin-email-combo-email">{u.email}</span>
+                                  {(u.nombre || u.telefono) ? (
+                                    <span className="admin-email-combo-meta">
+                                      {[u.nombre, u.telefono].filter(Boolean).join(' · ')}
+                                    </span>
+                                  ) : null}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="form-actions" style={{display:'flex',gap:'12px',padding:'18px 0',borderTop:'1px solid #eee',background:'rgba(255,255,255,0.95)',justifyContent:'flex-end',position:'sticky',bottom:0,zIndex:1}}>
@@ -689,99 +797,419 @@ const Turnos = () => {
         </div>
       )}
 
-        <div className="turnos-tabla">
-          {turnosFiltrados.length > 0 ? (
-            <div className="turnos-admin-list" style={{marginTop:'18px'}}>
-              {turnosFiltrados.map((turno) => {
-                const servicio = servicios[turno.servicioId];
-                const usuario = usuarios[turno.usuarioId];
-                const nombreUsuario = usuario?.nombre || turno.nombre || 'Sin nombre';
-                // Badge de estado y color
-                let estadoLabel = turno.estado;
-                let estadoColor = '#1e7e34';
-                if (turno.estado === 'cancelado') {
-                  estadoLabel = 'Cancelado';
-                  estadoColor = '#e53935';
-                } else if (turno.estado === 'confirmado') {
-                  estadoLabel = 'Confirmado';
-                  estadoColor = '#1976d2';
-                } else if (turno.estado === 'completado') {
-                  estadoLabel = 'Completado';
-                  estadoColor = '#388e3c';
-                }
+      {/* Modal de reprogramación */}
+      {reprogramando && turnoReprogramar && (
+        <div className="modal-turno-bg" style={{position:'fixed',top:0,left:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.35)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1100,animation:'fadeInBg .4s'}} onClick={cerrarReprogramar}>
+          <div className="modal-turno" style={{background:'linear-gradient(135deg,#fff 80%,#e7b2e6 100%)',borderRadius:'22px',boxShadow:'0 8px 40px rgba(180,0,90,0.18)',padding:'0',minWidth:'340px',maxWidth:'95vw',width:'860px',animation:'modalScaleIn .4s',position:'relative',display:'flex',flexDirection:'column',maxHeight:'90vh'}} onClick={e => e.stopPropagation()}>
+            <button style={{position:'absolute',top:18,right:18,background:'none',border:'none',fontSize:'1.3rem',color:'#d13fa0',cursor:'pointer',zIndex:2}} onClick={cerrarReprogramar} title="Cerrar">×</button>
+            <div style={{padding:'34px 34px 0 34px',overflowY:'auto',flex:'1 1 auto'}}>
+              <h3 style={{marginBottom:'18px',fontWeight:'bold',fontSize:'1.35rem',color:'#d13fa0',display:'flex',alignItems:'center',gap:'10px'}}>
+                <Wrench size={20} /> Reprogramar turno
+              </h3>
+
+              {(() => {
+                const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+                const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                const fechaActualObj = new Date(String(turnoReprogramar.fecha) + 'T00:00:00');
+                const fechaActualLabel = `${dias[fechaActualObj.getDay()]} ${fechaActualObj.getDate()} de ${meses[fechaActualObj.getMonth()]} ${fechaActualObj.getFullYear()}`;
+                const fechaActualStr = String(turnoReprogramar.fecha || '').slice(0, 10);
+                const horaActualStr = String(turnoReprogramar.hora || '').trim();
+                const servicio = servicios[turnoReprogramar.servicioId];
                 return (
-                  <div key={turno.id} className="turno-admin-card compacto" style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '18px 24px',
-                    marginBottom: 16,
-                    borderRadius: 20,
-                    background: 'linear-gradient(180deg,#fff,#fce4ec)',
-                    border: '1.5px solid #f3d1e6',
-                    boxShadow: '0 8px 22px rgba(209,63,160,0.10)',
-                    position: 'relative',
-                    transition: 'box-shadow 0.2s',
-                  }}>
-                    <div style={{display:'flex',flexDirection:'column',gap:2}}>
-                      <b style={{ color: '#d13fa0', fontSize:18 }}>{servicio?.nombre}</b>
-                      <div style={{display:'flex',alignItems:'center',gap:8}}>
-                        <span style={{ color: '#333', fontWeight: 500 }}>{nombreUsuario}</span>
-                        <span style={{ fontSize:13, fontWeight:600, color: estadoColor, background:'#fff', borderRadius:12, padding:'2px 12px', display:'inline-block', border:`1px solid ${estadoColor}33`}}>
+                  <>
+                    <div style={{display:'flex',gap:'16px',flexWrap:'wrap',alignItems:'flex-start'}}>
+                      <div style={{flex:'1 1 280px',background:'#fff',border:'1.5px solid rgba(209,63,160,0.18)',borderRadius:'16px',padding:'14px 14px'}}>
+                        <div style={{fontWeight:'900',color:'#d13fa0',marginBottom:'8px'}}>Fecha actual</div>
+                        <div style={{color:'#222',fontWeight:'800',fontSize:'15px',lineHeight:1.25}}>{fechaActualLabel}</div>
+                        <div style={{marginTop:'6px',display:'flex',gap:'10px',flexWrap:'wrap',alignItems:'center'}}>
+                          <span style={{background:'rgba(209,63,160,0.10)',border:'1px solid rgba(209,63,160,0.18)',color:'#d13fa0',borderRadius:'999px',padding:'6px 10px',fontWeight:'900',fontSize:'13px'}}>
+                            {turnoReprogramar.hora} hs
+                          </span>
+                          <span style={{color:'rgba(0,0,0,0.65)',fontWeight:'700',fontSize:'13px'}}>
+                            {servicio?.nombre || 'Servicio'}
+                          </span>
+                        </div>
+                        <div style={{marginTop:'10px',fontSize:'13px',color:'rgba(0,0,0,0.68)'}}>
+                          <div><b>Cliente:</b> {turnoReprogramar.nombre || 'Sin nombre'}</div>
+                          <div><b>Email:</b> {turnoReprogramar.email || '-'}</div>
+                        </div>
+                        <div style={{marginTop:'12px',fontSize:'12px',color:'rgba(0,0,0,0.60)'}}>
+                          Al reprogramar, este horario vuelve a quedar libre.
+                        </div>
+                      </div>
+
+                      <div style={{flex:'2 1 420px',background:'#fff',border:'1.5px solid rgba(209,63,160,0.18)',borderRadius:'16px',padding:'14px 14px'}}>
+                        <div style={{fontWeight:'900',color:'#d13fa0',marginBottom:'8px'}}>Nueva fecha y horario</div>
+                        <div className="reprog-fechas-grid" style={{marginBottom:'10px'}}>
+                          {Array.from({length:14}).map((_,i) => {
+                            const hoy = new Date();
+                            const fecha = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()+i);
+                            if (fecha.getDay() === 0) return null;
+                            const fechaStr = fecha.toISOString().slice(0,10);
+                            const diasAbrev = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                            const mesesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                            return (
+                              <div
+                                key={fechaStr}
+                                className={`fecha-card ${reprog.fecha === fechaStr ? 'selected' : ''}`}
+                                onClick={() => setReprog({ fecha: fechaStr, hora: '' })}
+                              >
+                                <div className="fecha-dia">{diasAbrev[fecha.getDay()]}</div>
+                                <div className="fecha-numero">{fecha.getDate()}</div>
+                                <div className="fecha-mes">{mesesAbrev[fecha.getMonth()]}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {reprog.fecha ? (
+                          <div className="reprog-horarios">
+                            <HorarioSelectorAdmin
+                              fecha={reprog.fecha}
+                              ignoreTurnoId={turnoReprogramar.id}
+                              blockedHoras={reprog.fecha === fechaActualStr && horaActualStr ? [horaActualStr] : []}
+                              selectedHora={reprog.hora}
+                              onSelect={(hora) => setReprog((prev) => ({ ...prev, hora }))}
+                            />
+                          </div>
+                        ) : (
+                          <div className="no-horarios" style={{marginTop:'8px'}}>
+                            <p>Elegí una fecha para ver los horarios disponibles.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{marginTop:'14px',padding:'12px 14px',borderRadius:'16px',border:'1px solid rgba(0,0,0,0.08)',background:'rgba(255,255,255,0.96)',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',flexWrap:'wrap'}}>
+                      <div style={{fontWeight:'900',color:'#222'}}>
+                        Nueva reserva:{' '}
+                        <span style={{color:'#d13fa0'}}>
+                          {reprog.fecha ? format(new Date(reprog.fecha + 'T00:00:00'), 'dd/MM/yyyy') : '—'}
+                        </span>
+                        {' '}·{' '}
+                        <span style={{color:'#d13fa0'}}>{reprog.hora || '—'}</span>
+                      </div>
+                      <div style={{fontSize:'12px',color:'rgba(0,0,0,0.55)'}}>
+                        Si el email está configurado, se enviará una notificación al cliente.
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="form-actions" style={{display:'flex',gap:'12px',padding:'18px 34px',borderTop:'1px solid #eee',background:'rgba(255,255,255,0.95)',justifyContent:'flex-end',position:'sticky',bottom:0,zIndex:1}}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={!reprog.fecha || !reprog.hora || guardandoReprog}
+                onClick={confirmarReprogramacion}
+                style={{
+                  background: 'linear-gradient(90deg,#d13fa0,#e7b2e6)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '10px 22px',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  boxShadow: '0 2px 8px rgba(209,63,160,0.08)',
+                  transition: '0.2s',
+                  opacity: (!reprog.fecha || !reprog.hora || guardandoReprog) ? 0.7 : 1,
+                  cursor: (!reprog.fecha || !reprog.hora || guardandoReprog) ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {guardandoReprog ? 'Reprogramando...' : 'Confirmar reprogramación'}
+              </button>
+              <button type="button" className="btn btn-secondary" style={{background:'#fff',color:'#d13fa0',border:'1.5px solid #d13fa0',borderRadius:'8px',padding:'10px 22px',fontWeight:'bold',fontSize:'1rem',transition:'0.2s'}} onClick={cerrarReprogramar}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+        <div className="turnos-tabla">
+          {turnosTotal > 0 ? (
+            <div className="turnos-admin-list" style={{marginTop:'18px'}}>
+              <div className="turnos-list-header">
+                <div className="turnos-summary">
+                  Mostrando {mostrandoDesde}-{mostrandoHasta} de {turnosTotal}
+                </div>
+                {turnosTotalPages > 1 && (
+                  <div className="turnos-pager" aria-label="Paginación">
+                    <button
+                      type="button"
+                      className="turnos-page-btn"
+                      onClick={() => setTurnosPage((p) => Math.max(1, p - 1))}
+                      disabled={turnosPage === 1}
+                      aria-label="Página anterior"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <span className="turnos-page-indicator">
+                      {turnosPage}/{turnosTotalPages}
+                    </span>
+                    <button
+                      type="button"
+                      className="turnos-page-btn"
+                      onClick={() => setTurnosPage((p) => Math.min(turnosTotalPages, p + 1))}
+                      disabled={turnosPage === turnosTotalPages}
+                      aria-label="Página siguiente"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="turnos-table" role="table" aria-label="Listado de turnos">
+                <div className="turnos-row turnos-row-header" role="row">
+                  <div className="turnos-cell cell-servicio" role="columnheader">
+                    <span className="turnos-num turnos-num-header">N°</span>
+                    <span>Servicio</span>
+                  </div>
+                  <div className="turnos-cell cell-cliente" role="columnheader">Cliente</div>
+                  <div className="turnos-cell cell-fechaHora" role="columnheader">Fecha y hora</div>
+                  <div className="turnos-cell cell-estado" role="columnheader">Estado</div>
+                  <div className="turnos-cell cell-pagos" role="columnheader">Pagos</div>
+                  <div className="turnos-cell cell-reprog" role="columnheader">Reprogramar</div>
+                  <div className="turnos-cell cell-opciones" role="columnheader">Editar</div>
+                </div>
+
+                {turnosPaginados.map((turno, idx) => {
+                  const servicio = servicios[turno.servicioId];
+                  const usuario = usuarios[turno.usuarioId];
+                  const nombreUsuario = usuario?.nombre || turno.nombre || 'Sin nombre';
+                  const rowNum = turnosStart + idx + 1;
+
+                  const isPagosOpen = pagosOpenId === turno.id;
+
+                  let estadoLabel = turno.estado;
+                  let estadoColor = '#1e7e34';
+                  if (turno.estado === 'cancelado') {
+                    estadoLabel = 'Cancelado';
+                    estadoColor = '#e53935';
+                  } else if (turno.estado === 'confirmado') {
+                    estadoLabel = 'Confirmado';
+                    estadoColor = '#1976d2';
+                  } else if (turno.estado === 'completado') {
+                    estadoLabel = 'Completado';
+                    estadoColor = '#388e3c';
+                  } else if (turno.estado === 'en_proceso') {
+                    estadoColor = '#ff9800';
+                  }
+
+                  estadoLabel = String(estadoLabel || '').split('_').join(' ');
+
+                  return (
+                    <div key={turno.id} className="turnos-row" role="row">
+                      <div className="turnos-cell cell-servicio" role="cell">
+                        <span className="turnos-num">{rowNum}</span>
+                        <span className="turnos-servicio-nombre">{servicio?.nombre || 'Servicio'}</span>
+                      </div>
+
+                      <div className="turnos-cell cell-cliente" role="cell">
+                        <span className="turnos-cliente-nombre">{nombreUsuario}</span>
+                      </div>
+
+                      <div className="turnos-cell cell-fechaHora" role="cell">
+                        {format(new Date(turno.fecha + 'T00:00:00'), 'dd/MM/yyyy')} · {turno.hora} hs
+                      </div>
+
+                      <div className="turnos-cell cell-estado" role="cell">
+                        <span
+                          className="turnos-estado-badge"
+                          style={{
+                            color: estadoColor,
+                            border: `1px solid ${estadoColor}33`,
+                          }}
+                        >
                           {estadoLabel}
                         </span>
                       </div>
-                      <small style={{ color: '#888' }}>
-                        {format(new Date(turno.fecha+'T00:00:00'),'dd/MM/yyyy')} · {turno.hora} hs
-                      </small>
-                      <div style={{fontSize:14,marginTop:4}}>
-                        <span style={{color:'#888'}}>Total:</span> <span style={{color:'#388e3c',fontWeight:600}}>${turno.montoTotal.toLocaleString()}</span>
-                        <span style={{color:'#888',margin:'0 8px'}}>Pagado:</span> <span style={{color:'#1976d2',fontWeight:600}}>${turno.montoPagado.toLocaleString()}</span>
-                        <span style={{color:'#888',margin:'0 8px'}}>Resta:</span> <span style={{color:'#ff9800',fontWeight:600}}>${(turno.montoTotal - turno.montoPagado).toLocaleString()}</span>
+
+                      <div className="turnos-cell cell-pagos" role="cell">
+                        <div className="turnos-pagos-top">
+                          <span className="turnos-pago-item">
+                            <span className="k">Total:</span>{' '}
+                            <span className="v total">${turno.montoTotal.toLocaleString()}</span>
+                          </span>
+                          <button
+                            type="button"
+                            className="turnos-pagos-toggle"
+                            onClick={() => setPagosOpenId((curr) => (curr === turno.id ? null : turno.id))}
+                            aria-label={isPagosOpen ? 'Ocultar pagos' : 'Ver pagos'}
+                            title={isPagosOpen ? 'Ocultar' : 'Ver detalle'}
+                          >
+                            {isPagosOpen ? '▴' : '▾'}
+                          </button>
+                        </div>
+
+                        <div className={`turnos-pagos-details ${isPagosOpen ? 'is-open' : ''}`}>
+                          <span className="turnos-pago-item">
+                            <span className="k">Pagado:</span>{' '}
+                            <span className="v pagado">${turno.montoPagado.toLocaleString()}</span>
+                          </span>
+                          <span className="turnos-pago-item">
+                            <span className="k">Resta:</span>{' '}
+                            <span className="v resta">${(turno.montoTotal - turno.montoPagado).toLocaleString()}</span>
+                          </span>
+                          <span className="turnos-pago-item turnos-pago-id">
+                            <span className="k">ID pago:</span>{' '}
+                            <span className="v id">{turno.pagoId || turno.id}</span>
+                          </span>
+                        </div>
                       </div>
-                      <div style={{fontSize:12,color:'#bbb',marginTop:2}}>ID: {turno.pagoId}</div>
+
+                      <div className="turnos-cell cell-reprog" role="cell">
+                        <button
+                          className="turnos-editar-btn"
+                          onClick={() => abrirReprogramar(turno)}
+                          title="Reprogramar"
+                          type="button"
+                        >
+                          <Wrench size={18} />
+                        </button>
+                      </div>
+
+                      <div className="turnos-cell cell-opciones" role="cell">
+                        <button
+                          className="turnos-editar-btn turnos-menu-btn"
+                          onClick={() => setMobileMenuOpenId(turno.id)}
+                          title="Ver detalles"
+                          type="button"
+                          aria-label="Ver detalles y acciones"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+                        <button
+                          className="turnos-editar-btn turnos-edit-btn"
+                          onClick={() => handleEditarTurno(turno)}
+                          title="Editar"
+                          type="button"
+                        >
+                          <Pencil size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <div style={{display:'flex',alignItems:'center',gap:10, height:'100%'}}>
-                      <button
-                        className="btn-accion editar"
-                        style={{
-                          background:'linear-gradient(135deg,#ffb6ea 0%,#ff6a88 100%)',
-                          color:'#fff',
-                          border:'none',
-                          borderRadius:'50%',
-                          width:'54px',
-                          height:'54px',
-                          minWidth:'54px',
-                          minHeight:'54px',
-                          fontWeight:'bold',
-                          fontSize:'1.08rem',
-                          boxShadow:'0 4px 18px #ffb6ea55',
-                          transition:'all 0.18s',
-                          display:'flex',
-                          alignItems:'center',
-                          justifyContent:'center',
-                          cursor:'pointer',
-                          position:'relative',
-                          overflow:'hidden',
-                          outline:'none',
-                          borderColor:'transparent',
-                        }}
-                        onClick={() => handleEditarTurno(turno)}
-                        title="Editar"
-                        onMouseOver={e => e.currentTarget.style.background='linear-gradient(135deg,#ff6a88 0%,#ffb6ea 100%)'}
-                        onMouseOut={e => e.currentTarget.style.background='linear-gradient(135deg,#ffb6ea 0%,#ff6a88 100%)'}
-                      >
-                        <svg width="26" height="26" fill="none" viewBox="0 0 24 24"><path d="M4 21h17" stroke="#fff" strokeWidth="2" strokeLinecap="round"/><path d="M15.232 5.232a3 3 0 1 1 4.243 4.243L7.5 21.5 3 22.5l1-4.5 11.232-11.232Z" stroke="#fff" strokeWidth="2"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           ) : (
             <p className="no-data">No se encontraron turnos</p>
           )}
         </div>
+
+        {/* Modal mobile: detalle + acciones (solo se muestra en celular por CSS) */}
+        {mobileMenuOpenId && mobileMenuTurno && (() => {
+          const turno = mobileMenuTurno;
+          const servicio = servicios[turno.servicioId];
+          const usuario = usuarios[turno.usuarioId];
+          const nombreUsuario = usuario?.nombre || turno.nombre || 'Sin nombre';
+
+          let estadoLabel = turno.estado;
+          let estadoColor = '#1e7e34';
+          if (turno.estado === 'cancelado') {
+            estadoLabel = 'Cancelado';
+            estadoColor = '#e53935';
+          } else if (turno.estado === 'confirmado') {
+            estadoLabel = 'Confirmado';
+            estadoColor = '#1976d2';
+          } else if (turno.estado === 'completado') {
+            estadoLabel = 'Completado';
+            estadoColor = '#388e3c';
+          } else if (turno.estado === 'en_proceso') {
+            estadoColor = '#ff9800';
+          }
+          estadoLabel = String(estadoLabel || '').split('_').join(' ');
+
+          return (
+            <div className="turnos-mobile-modal-bg" onClick={() => setMobileMenuOpenId(null)}>
+              <div className="turnos-mobile-modal" role="dialog" aria-modal="true" aria-label="Detalle del turno" onClick={(e) => e.stopPropagation()}>
+                <button className="turnos-mobile-modal-close" type="button" onClick={() => setMobileMenuOpenId(null)} title="Cerrar">
+                  ×
+                </button>
+
+                <div className="turnos-mobile-modal-title">Detalle del turno</div>
+
+                <div className="turnos-mobile-modal-head">
+                  <div className="turnos-mobile-modal-servicio">{servicio?.nombre || 'Servicio'}</div>
+                  <div className="turnos-mobile-modal-cliente">{nombreUsuario}</div>
+                </div>
+
+                <div className="turnos-mobile-menu-grid">
+                  <div className="turnos-mobile-menu-item">
+                    <div className="k">Fecha y hora</div>
+                    <div className="v">{format(new Date(turno.fecha + 'T00:00:00'), 'dd/MM/yyyy')} · {turno.hora} hs</div>
+                  </div>
+
+                  <div className="turnos-mobile-menu-item">
+                    <div className="k">Estado</div>
+                    <div className="v">
+                      <span
+                        className="turnos-estado-badge"
+                        style={{
+                          color: estadoColor,
+                          border: `1px solid ${estadoColor}33`,
+                        }}
+                      >
+                        {estadoLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="turnos-mobile-menu-item">
+                    <div className="k">Pagos</div>
+                    <div className="v">
+                      <div className="turnos-mobile-pagos">
+                        <span className="turnos-pago-item">
+                          <span className="k">Total:</span>{' '}
+                          <span className="v total">${turno.montoTotal.toLocaleString()}</span>
+                        </span>
+                        <span className="turnos-pago-item">
+                          <span className="k">Pagado:</span>{' '}
+                          <span className="v pagado">${turno.montoPagado.toLocaleString()}</span>
+                        </span>
+                        <span className="turnos-pago-item">
+                          <span className="k">Resta:</span>{' '}
+                          <span className="v resta">${(turno.montoTotal - turno.montoPagado).toLocaleString()}</span>
+                        </span>
+                        <span className="turnos-pago-item turnos-pago-id">
+                          <span className="k">ID pago:</span>{' '}
+                          <span className="v id">{turno.pagoId || turno.id}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="turnos-mobile-menu-actions">
+                  <button
+                    type="button"
+                    className="turnos-mobile-action"
+                    onClick={() => {
+                      setMobileMenuOpenId(null);
+                      abrirReprogramar(turno);
+                    }}
+                  >
+                    <Wrench size={18} /> Reprogramar
+                  </button>
+                  <button
+                    type="button"
+                    className="turnos-mobile-action"
+                    onClick={() => {
+                      setMobileMenuOpenId(null);
+                      handleEditarTurno(turno);
+                    }}
+                  >
+                    <Pencil size={18} /> Editar
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

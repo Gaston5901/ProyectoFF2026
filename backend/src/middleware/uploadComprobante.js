@@ -21,12 +21,41 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  // Solo imágenes y PDF
-  if (/\.(jpg|jpeg|png|pdf)$/i.test(file.originalname)) {
+  // Imágenes y PDF (alineado con validación del frontend)
+  const allowedMimeTypes = new Set([
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/jpg',
+    'image/gif',
+    'image/webp',
+    'image/bmp',
+    'image/heic',
+    'image/heif',
+  ]);
+
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  const allowedExt = new Set([
+    '.pdf',
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.gif',
+    '.webp',
+    '.bmp',
+    '.heic',
+    '.heif',
+  ]);
+
+  const ok = allowedMimeTypes.has(String(file.mimetype || '').toLowerCase()) || allowedExt.has(ext);
+  if (ok) {
     cb(null, true);
-  } else {
-    cb(new Error('Solo se permiten imágenes o PDF'), false);
+    return;
   }
+
+  // Importante: NO tirar error (evita 500). Dejamos que el controller responda 400.
+  req.fileValidationError = 'El comprobante debe ser una imagen o PDF.';
+  cb(null, false);
 };
 
 const uploadComprobante = multer({ storage, fileFilter });

@@ -86,12 +86,12 @@ const Register = () => {
           </div>
 
           <div className="form-group">
-            <label id="email" className="form-label">Gmail</label>
+            <label id="email" className="form-label">Email</label>
             <input
               type="email"
               name="email"
               className="form-input"
-              placeholder="tu@email.com"
+              placeholder="tu@correo.com"
               value={formData.email}
               onChange={handleChange}
               required

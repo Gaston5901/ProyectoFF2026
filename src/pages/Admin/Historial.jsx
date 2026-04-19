@@ -1,8 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
-import { turnosAPI, serviciosAPI, usuariosAPI } from '../../services/api';
-import { History, Search, Eye } from 'lucide-react';
+import { turnosAPI, serviciosAPI } from '../../services/api';
+import { History, Search, Eye, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import './Admin.css';
+
+const formatEstadoLabel = (value) => String(value || '').split('_').join(' ').toUpperCase();
+const HISTORIAL_ESTADOS = [
+  'todos',
+  'en_proceso',
+  'confirmado',
+  'completado',
+  'cancelado',
+  'rechazado',
+  'expirado',
+  'devuelto',
+];
 
 /* =====================================================
    MODAL TURNO DETALLE — PREMIUM
@@ -70,6 +82,8 @@ function ModalTurnoDetalle({ turno, usuario, servicio, onClose }) {
       estadoColor = '#1976d2';
       infoDinero = 'Turno pendiente de pago final.';
     }
+
+    estadoLabel = formatEstadoLabel(estadoLabel);
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => (document.body.style.overflow = '');
@@ -171,7 +185,7 @@ function ModalTurnoDetalle({ turno, usuario, servicio, onClose }) {
 
           <hr style={{ border: 'none', height: 1, background: 'linear-gradient(to right, transparent, #d13fa0, transparent)', margin: '14px 0' }} />
 
-          <div><b>ID de pago:</b> <span style={{ color: '#d13fa0', fontWeight: 600 }}>{turno.pagoId}</span></div>
+          <div><b>ID pago:</b> <span style={{ color: '#d13fa0', fontWeight: 600 }}>{turno.pagoId || turno.id}</span></div>
 
           <div style={{ fontSize: 13, color: '#999', marginTop: 10 }}>
             Creado: {format(new Date(turno.createdAt), 'dd/MM/yyyy HH:mm')}
@@ -194,7 +208,7 @@ const Historial = () => {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [modalTurnoId, setModalTurnoId] = useState(null);
   const [pagina, setPagina] = useState(1);
-  const itemsPorPagina = 8;
+  const itemsPorPagina = 6;
   const topRef = useRef(null);
 
   useEffect(() => {
@@ -207,20 +221,16 @@ const Historial = () => {
 
   const cargarDatos = async () => {
     try {
-      const [t, s, u] = await Promise.all([
+      const [t, s] = await Promise.all([
         turnosAPI.getAll(),
         serviciosAPI.getAll(),
-        usuariosAPI.getAll(),
       ]);
 
       const sMap = {};
       s.data.forEach(x => sMap[x.id] = x);
 
-      const uMap = {};
-      u.data.forEach(x => uMap[x.id] = x);
-
       setServicios(sMap);
-      setUsuarios(uMap);
+      setUsuarios({});
       setTurnos(t.data.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)));
     } catch (e) {
       console.error(e);
@@ -232,11 +242,12 @@ const Historial = () => {
   const turnosFiltrados = turnos.filter(t => {
     const estadoOk = filtroEstado === 'todos' || t.estado === filtroEstado;
     const b = busqueda.toLowerCase();
+    const pagoIdStr = String(t.pagoId || t.id || '').toLowerCase();
     const buscaOk =
       !b ||
       servicios[t.servicioId]?.nombre.toLowerCase().includes(b) ||
       (usuarios[t.usuarioId]?.nombre || t.nombre || '').toLowerCase().includes(b) ||
-      t.pagoId.toLowerCase().includes(b);
+      pagoIdStr.includes(b);
     return estadoOk && buscaOk;
   });
 
@@ -244,17 +255,16 @@ const Historial = () => {
     setPagina(1);
   }, [busqueda, filtroEstado]);
 
-  useEffect(() => {
-    if (!loading) {
-      topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [pagina, loading]);
-
   const totalPaginas = Math.max(1, Math.ceil(turnosFiltrados.length / itemsPorPagina));
   const turnosPaginados = turnosFiltrados.slice(
     (pagina - 1) * itemsPorPagina,
     pagina * itemsPorPagina
   );
+
+  const start = (pagina - 1) * itemsPorPagina;
+  const end = start + itemsPorPagina;
+  const mostrandoDesde = turnosFiltrados.length === 0 ? 0 : start + 1;
+  const mostrandoHasta = Math.min(end, turnosFiltrados.length);
 
   if (loading) {
     return (
@@ -270,25 +280,6 @@ const Historial = () => {
       <div className="admin-header">
         <h1 className="historial-title"><History size={40} /> Historial de Turnos</h1>
         <p>Todos los turnos registrados en el sistema</p>
-        {turnosFiltrados.length > itemsPorPagina && (
-          <div
-            style={{
-              marginTop: 6,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 12px',
-              borderRadius: 999,
-              background: 'rgba(209,63,160,0.08)',
-              border: '1px solid rgba(209,63,160,0.2)',
-              color: '#d13fa0',
-              fontWeight: 600,
-              fontSize: 14
-            }}
-          >
-            Página {pagina} de {totalPaginas}
-          </div>
-        )}
       </div>
 
       <div className="container">
@@ -303,115 +294,167 @@ const Historial = () => {
           </div>
 
           <div className="filtros">
-            {['todos','confirmado','completado'].map(f => (
-              <button
-                key={f}
-                className={`filtro-btn ${filtroEstado === f ? 'active' : ''}`}
-                onClick={() => setFiltroEstado(f)}
+            <div className="filtros filtros-compact" aria-label="Filtro de estado">
+              <span className="filtros-icon" aria-hidden="true">
+                <Filter size={16} />
+              </span>
+              <select
+                className="filtro-select"
+                value={filtroEstado}
+                onChange={(e) => setFiltroEstado(e.target.value)}
+                aria-label="Filtrar por estado"
               >
-                {f}
-              </button>
-            ))}
+                {HISTORIAL_ESTADOS.map((estado) => (
+                  <option key={estado} value={estado}>
+                    {formatEstadoLabel(estado)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="historial-lista">
-        {turnosPaginados.map(turno => {
-          const servicio = servicios[turno.servicioId];
-          const usuario = usuarios[turno.usuarioId];
-          const nombreUsuario = usuario?.nombre || turno.nombre || 'Sin nombre';
-          // Badge simple para estado principal
-          let estadoLabel = turno.estado;
-          let estadoColor = '#1e7e34';
-          let infoDinero = '';
-          const fechaTurno = new Date(turno.fecha + 'T' + (turno.hora || '00:00') + ':00');
-          const ahora = new Date();
-          if (turno.estado === 'rechazado') {
-            estadoLabel = 'rechazado';
-            estadoColor = '#a020f0'; // violeta
-            infoDinero = 'Este turno fue rechazado por el administrador. El cliente puede reservar nuevamente este horario.';
-          } else if (turno.estado === 'devuelto' && turno.seniaDevuelta) {
-            // Si es seña devuelta, registroEstadistica es 'seña' o 'ninguno' y la fecha ya pasó, es expirado
-            if ((turno.registroEstadistica === 'seña' || turno.registroEstadistica === 'ninguno') && fechaTurno < ahora) {
+        <div className="historial-table-frame">
+          <div className="turnos-list-header">
+            <div className="turnos-summary">
+              Mostrando {mostrandoDesde}-{mostrandoHasta} de {turnosFiltrados.length}
+            </div>
+
+            {turnosFiltrados.length > itemsPorPagina && (
+              <div className="turnos-pager turnos-pager-slim" aria-label="Paginación historial">
+                <button
+                  type="button"
+                  className="turnos-page-btn"
+                  onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                  disabled={pagina === 1}
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <span className="turnos-page-indicator">
+                  {pagina}/{totalPaginas}
+                </span>
+                <button
+                  type="button"
+                  className="turnos-page-btn"
+                  onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                  disabled={pagina === totalPaginas}
+                  aria-label="Página siguiente"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="turnos-table historial-table" role="table" aria-label="Historial de turnos">
+          <div className="turnos-row turnos-row-header" role="row">
+            <div className="turnos-cell cell-servicio" role="columnheader">
+              <span className="turnos-num turnos-num-header">N°</span>
+              <span>Servicio</span>
+            </div>
+            <div className="turnos-cell cell-cliente" role="columnheader">Cliente</div>
+            <div className="turnos-cell cell-fechaHora" role="columnheader">Fecha y hora</div>
+            <div className="turnos-cell cell-estado" role="columnheader">Estado</div>
+            <div className="turnos-cell cell-opciones" role="columnheader">Ver</div>
+          </div>
+
+          {turnosPaginados.map((turno, idx) => {
+            const servicio = servicios[turno.servicioId];
+            const usuario = usuarios[turno.usuarioId];
+            const nombreUsuario = usuario?.nombre || turno.nombre || 'Sin nombre';
+
+            const rowNum = turnosFiltrados.length - (start + idx);
+
+            let estadoLabel = turno.estado;
+            let estadoColor = '#1e7e34';
+            const fechaTurno = new Date(turno.fecha + 'T' + (turno.hora || '00:00') + ':00');
+            const ahora = new Date();
+            if (turno.estado === 'rechazado') {
+              estadoLabel = 'rechazado';
+              estadoColor = '#a020f0';
+            } else if (turno.estado === 'devuelto' && turno.seniaDevuelta) {
+              if ((turno.registroEstadistica === 'seña' || turno.registroEstadistica === 'ninguno') && fechaTurno < ahora) {
+                estadoLabel = 'expirado';
+                estadoColor = '#ff9800';
+              } else if (turno.registroEstadistica === 'seña' || turno.registroEstadistica === 'ninguno') {
+                estadoLabel = 'cancelado';
+                estadoColor = '#e53935';
+              } else if (turno.registroEstadistica === 'expirado') {
+                estadoLabel = 'expirado';
+                estadoColor = '#ff9800';
+              } else {
+                estadoLabel = 'devuelto';
+                estadoColor = '#856404';
+              }
+            } else if (turno.estado === 'completado' && turno.registroEstadistica === 'seña' && fechaTurno < ahora) {
               estadoLabel = 'expirado';
               estadoColor = '#ff9800';
-            } else if (turno.registroEstadistica === 'seña' || turno.registroEstadistica === 'ninguno') {
+            } else if (turno.estado === 'completado' && turno.registroEstadistica === 'seña') {
               estadoLabel = 'cancelado';
               estadoColor = '#e53935';
-            } else if (turno.registroEstadistica === 'expirado') {
+            } else if (turno.estado === 'cancelado') {
+              estadoLabel = 'cancelado';
+              estadoColor = '#e53935';
+            } else if (turno.estado === 'expirado' && turno.registroEstadistica === 'seña') {
               estadoLabel = 'expirado';
               estadoColor = '#ff9800';
-            } else {
-              estadoLabel = 'devuelto';
-              estadoColor = '#856404';
+            } else if (turno.estado === 'expirado') {
+              estadoLabel = 'expirado';
+              estadoColor = '#ff9800';
+            } else if (turno.estado === 'completado') {
+              estadoLabel = 'completado';
+              estadoColor = '#388e3c';
+            } else if (turno.estado === 'confirmado') {
+              estadoLabel = 'confirmado';
+              estadoColor = '#1976d2';
             }
-          } else if (
-            turno.estado === 'completado' &&
-            turno.registroEstadistica === 'seña' &&
-            fechaTurno < ahora
-          ) {
-            estadoLabel = 'expirado';
-            estadoColor = '#ff9800';
-          } else if (turno.estado === 'completado' && turno.registroEstadistica === 'seña') {
-            estadoLabel = 'cancelado';
-            estadoColor = '#e53935';
-          } else if (turno.estado === 'cancelado') {
-            estadoLabel = 'cancelado';
-            estadoColor = '#e53935';
-          } else if (turno.estado === 'expirado' && turno.registroEstadistica === 'seña') {
-            estadoLabel = 'expirado';
-            estadoColor = '#ff9800';
-          } else if (turno.estado === 'expirado') {
-            estadoLabel = 'expirado';
-            estadoColor = '#ff9800';
-          } else if (turno.estado === 'completado') {
-            estadoLabel = 'completado';
-            estadoColor = '#388e3c';
-          } else if (turno.estado === 'confirmado') {
-            estadoLabel = 'confirmado';
-            estadoColor = '#1976d2';
-          }
-          return (
-            <div key={turno.id} className="historial-item">
-              <div className="historial-info">
-                <div className="historial-titulo">{servicio?.nombre}</div>
-                <div className="historial-linea">
-                  <span className="historial-cliente">{nombreUsuario}</span>
-                  <span className="historial-estado" style={{ color: estadoColor, borderColor: `${estadoColor}33` }}>
+
+            estadoLabel = formatEstadoLabel(estadoLabel);
+
+            return (
+              <div key={turno.id} className="turnos-row" role="row">
+                <div className="turnos-cell cell-servicio" role="cell">
+                  <span className="turnos-num">{rowNum}</span>
+                  <span className="turnos-servicio-nombre">{servicio?.nombre || 'Servicio'}</span>
+                </div>
+
+                <div className="turnos-cell cell-cliente" role="cell">
+                  <span className="turnos-cliente-nombre">{nombreUsuario}</span>
+                </div>
+
+                <div className="turnos-cell cell-fechaHora" role="cell">
+                  {format(new Date(turno.fecha + 'T00:00:00'), 'dd/MM/yyyy')} · {turno.hora} hs
+                </div>
+
+                <div className="turnos-cell cell-estado" role="cell">
+                  <span
+                    className="turnos-estado-badge"
+                    style={{
+                      color: estadoColor,
+                      border: `1px solid ${estadoColor}33`,
+                    }}
+                  >
                     {estadoLabel}
                   </span>
                 </div>
-                <div className="historial-fecha">
-                  {format(new Date(turno.fecha+'T00:00:00'),'dd/MM/yyyy')} · {turno.hora} hs
+
+                <div className="turnos-cell cell-opciones" role="cell">
+                  <button
+                    className="turnos-editar-btn"
+                    onClick={() => setModalTurnoId(turno.id)}
+                    title="Ver detalles"
+                    aria-label="Ver detalles"
+                    type="button"
+                  >
+                    <Eye size={18} />
+                  </button>
                 </div>
               </div>
-              <button className="historial-ver" onClick={() => setModalTurnoId(turno.id)} title="Ver detalles">
-                <Eye size={18} />
-              </button>
-            </div>
-          );
-        })}
-        </div>
-
-        {turnosFiltrados.length > itemsPorPagina && (
-          <div className="historial-paginacion">
-            <button
-              className="btn btn-secondary"
-              onClick={() => setPagina(p => Math.max(1, p - 1))}
-              disabled={pagina === 1}
-            >
-              Anterior
-            </button>
-            <span className="historial-pagina">Página {pagina} de {totalPaginas}</span>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
-              disabled={pagina === totalPaginas}
-            >
-              Siguiente
-            </button>
+            );
+          })}
           </div>
-        )}
+        </div>
 
         {/* ModalTurnoDetalle fuera del map, estable y sin parpadeo */}
         {modalTurnoId && (() => {

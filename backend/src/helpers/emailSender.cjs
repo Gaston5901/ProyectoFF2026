@@ -3,6 +3,7 @@ require("dotenv/config");
 const https = require("https");
 
 const comprobanteTurnoTemplate = require("../emailTemplates/comprobanteTurno");
+const turnoReprogramadoTemplate = require("../emailTemplates/turnoReprogramado");
 const recuperarPasswordTemplate = require("../emailTemplates/recuperarPassword");
 
 const provider = String(process.env.EMAIL_PROVIDER || "auto").toLowerCase();
@@ -217,6 +218,37 @@ async function enviarComprobanteTurno({
   });
 }
 
+async function enviarTurnoReprogramado({
+  to,
+  nombre,
+  servicio,
+  fechaAnterior,
+  horaAnterior,
+  fechaNueva,
+  horaNueva,
+  montoTotal,
+  montoPagado,
+  restoAPagar,
+  pagoId,
+}) {
+  await sendEmail({
+    to,
+    subject: "Tu turno fue reprogramado",
+    html: turnoReprogramadoTemplate({
+      nombre,
+      servicio,
+      fechaAnterior,
+      horaAnterior,
+      fechaNueva,
+      horaNueva,
+      montoTotal,
+      montoPagado,
+      restoAPagar,
+      pagoId,
+    }),
+  });
+}
+
 async function sendPasswordRecoveryEmail(to, token) {
   const minutos = 10;
   const frontend = process.env.FRONTEND_URL || "http://localhost:5173";
@@ -230,5 +262,6 @@ async function sendPasswordRecoveryEmail(to, token) {
 
 module.exports = {
   enviarComprobanteTurno,
+  enviarTurnoReprogramado,
   sendPasswordRecoveryEmail,
 };

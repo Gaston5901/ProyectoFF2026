@@ -160,6 +160,324 @@
   margin-top: 40px;
 }
 
+/* Toolbar + búsqueda (similar a historial admin) */
+.turnos-toolbar {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box svg {
+  position: absolute;
+  left: 15px;
+  color: var(--text-light);
+}
+
+.search-box input {
+  width: 100%;
+  padding: 12px 12px 12px 45px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+/* Encabezado de listado + paginación */
+.turnos-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.turnos-summary {
+  color: var(--text-light);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.turnos-pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  border-radius: 11px;
+  background: rgba(209, 63, 160, 0.08);
+  border: 1px solid rgba(209, 63, 160, 0.18);
+}
+
+.turnos-page-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid rgba(209, 63, 160, 0.22);
+  background: #fff;
+  color: #d13fa0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.turnos-page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.turnos-page-indicator {
+  font-weight: 800;
+  color: #d13fa0;
+  font-size: 12px;
+  min-width: 38px;
+  text-align: center;
+}
+
+.turnos-pager.turnos-pager-slim {
+  padding: 3px 6px;
+  border-radius: 10px;
+}
+
+.turnos-pager.turnos-pager-slim .turnos-page-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+}
+
+.turnos-pager.turnos-pager-slim .turnos-page-indicator {
+  font-size: 11px;
+  min-width: 34px;
+}
+
+.turnos-bottom-pager {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+/* Marco tipo historial */
+.historial-table-frame {
+  border: 1px solid rgba(209, 63, 160, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 12px;
+  box-shadow: 0 6px 18px rgba(209, 63, 160, 0.06);
+}
+
+/* Tabla (listado tipo cards por fila) */
+.turnos-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.turnos-row {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 2.6fr)
+    170px
+    120px
+    52px;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(209,63,160,0.14);
+  box-shadow: 0 6px 18px rgba(209,63,160,0.08);
+}
+
+.turnos-row:hover {
+  box-shadow: 0 10px 26px rgba(209,63,160,0.14);
+}
+
+.turnos-row.turnos-row-header {
+  background: linear-gradient(135deg, #fce4ec 0%, #f3e5f5 100%);
+  border: 1px solid rgba(209,63,160,0.16);
+  box-shadow: none;
+  font-weight: 900;
+  color: #4a1d3b;
+}
+
+.turnos-cell {
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-dark);
+}
+
+.turnos-cell.cell-servicio {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.turnos-num {
+  width: 30px;
+  flex: 0 0 30px;
+  text-align: left;
+  font-weight: 900;
+  color: #b7b7b7;
+  line-height: 1.2;
+}
+
+.turnos-num-header {
+  color: #4a1d3b;
+}
+
+.turnos-cell.cell-opciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.turnos-servicio-nombre {
+  font-weight: 900;
+  color: #d13fa0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  word-break: break-word;
+  display: block;
+  line-height: 1.15;
+}
+
+.turnos-editar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #d13fa0;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.turnos-editar-btn:hover {
+  background: rgba(209, 63, 160, 0.10);
+}
+
+/* Badge dentro de tabla: inline (no absoluto como en cards viejas) */
+.mis-turnos-table .turno-badge {
+  position: static;
+  top: auto;
+  right: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  box-shadow: none;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.turno-badge.en-proceso {
+  background: #fff3e0;
+  color: #ff9800;
+}
+
+@media (max-width: 900px) {
+  .turnos-row {
+    grid-template-columns:
+      minmax(220px, 2.2fr)
+      160px
+      110px
+      52px;
+  }
+}
+
+@media (max-width: 700px) {
+  .historial-table-frame {
+    padding: 10px;
+  }
+
+  .turnos-toolbar {
+    margin-bottom: 14px;
+  }
+
+  .search-box svg {
+    left: 12px;
+  }
+
+  .search-box input {
+    padding: 11px 12px 11px 42px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  .turnos-row.turnos-row-header {
+    display: none;
+  }
+
+  .turnos-row {
+    position: relative;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .turnos-cell.cell-servicio {
+    grid-column: 1 / -1;
+    padding-right: 22px;
+  }
+
+  /* N° como círculo arriba a la derecha (mobile) */
+  .turnos-num {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: auto;
+    height: auto;
+    background: transparent;
+    border: none;
+    color: #d13fa0;
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1;
+    z-index: 2;
+  }
+
+  .turnos-cell.cell-fechaHora {
+    grid-column: 1 / -1;
+    color: var(--text-light);
+    font-weight: 800;
+  }
+
+  .turnos-cell.cell-estado {
+    grid-column: 1 / 2;
+    justify-self: start;
+  }
+
+  .turnos-cell.cell-opciones {
+    grid-column: 2 / 3;
+    justify-self: end;
+  }
+
+  .mis-turnos-table .turno-badge {
+    font-size: 10px;
+    padding: 3px 9px;
+  }
+
+  .turnos-editar-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+  }
+}
+
 .section-title {
   display: flex;
   align-items: center;
@@ -277,7 +595,7 @@
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.2px;
-  text-transform: lowercase;
+  text-transform: uppercase;
   box-shadow: 0 2px 8px rgba(233,30,99,0.08);
   border: none;
   background: #f5f5f5;

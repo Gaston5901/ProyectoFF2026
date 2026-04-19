@@ -22,150 +22,169 @@ import ServiciosAdmin from './pages/Admin/ServiciosAdmin';
 import EditarCarrusel from './pages/Admin/EditarCarrusel';
 import EditarHorariosAdmin from './pages/Admin/EditarHorariosAdmin';
 import UsuariosAdmin from './pages/Admin/UsuariosAdmin';
+import Reportes from './pages/Admin/Reportes';
 import RecuperarPassword from './pages/RecuperarPassword';
 import PagoExitoso from './pages/PagoExitoso';
 import PagoFallido from './pages/PagoFallido';
 import PagoPendiente from './pages/PagoPendiente';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Nosotros from './pages/Nosotros'; 
+import { useAuth } from './context/AuthContext';
+
+function HomeRoute() {
+  const { isAdmin, loading } = useAuth();
+  if (loading) return <Home />;
+  if (isAdmin()) return <Navigate to="/admin/panel" replace />;
+  return <Home />;
+}
 
 function App() {
   return (
     <Router>
-      <AuthProvider>
-          <div className="app">
-            <Navbar />
-            <main style={{ minHeight: 'calc(100vh - 200px)', paddingTop: '80px' }}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/servicios" element={<Servicios />} />
-                <Route path="/reservar" element={<ReservarTurno />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/recuperar" element={<RecuperarPassword />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/pago-exitoso" element={<PagoExitoso />} />
-                <Route path="/pago-fallido" element={<PagoFallido />} />
-                <Route path="/pago-pendiente" element={<PagoPendiente />} />
-                <Route
-                  path="/mis-turnos"
-                  element={
-                    <ProtectedRoute>
-                      <MisTurnos />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/carrito"
-                  element={
-                    <ProtectedRoute>
-                      <Carrito />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                   path="/admin/panel"
-                   element={
-                     <ProtectedRoute adminOnly>
-                       <AdminDashboard />
-                     </ProtectedRoute>
-                   }
-                 />
-                 <Route
-                   path="/admin/panel-trabajo"
-                   element={
-                     <ProtectedRoute adminOnly>
-                       <PanelTrabajo />
-                     </ProtectedRoute>
-                   }
-                 />
-                <Route
-                  path="/admin/historial"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <Historial />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/servicios-admin"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <ServiciosAdmin />
-                    </ProtectedRoute>
-                  }
-                />
-                
-                <Route
-                  path="/admin/editar-carrusel"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <EditarCarrusel />
-                    </ProtectedRoute>
-                  }
-                />
-                
-                <Route
-                  path="/admin/editar-horarios"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <EditarHorariosAdmin />
-                    </ProtectedRoute>
-                  }
-                />
-
-
-                <Route
-                  path="/admin/usuarios"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <UsuariosAdmin />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <AdminDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/turnos"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <AdminTurnos />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/estadisticas"
-                  element={
-                    <ProtectedRoute adminOnly>
-                      <AdminEstadisticas />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/nosotros" element={<Nosotros />} />
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </main>
-            <Footer />
-            <ToastContainer
-              position="top-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
-          </div>
-      </AuthProvider>
+      <AppShell />
     </Router>
+  );
+}
+
+function AppShell() {
+  return (
+    <AuthProvider>
+      <div className="app">
+        <Navbar />
+        <main style={{ minHeight: 'calc(100vh - 200px)', paddingTop: '80px' }}>
+          <Routes>
+            <Route path="/" element={<HomeRoute />} />
+            <Route path="/servicios" element={<Servicios />} />
+            <Route path="/reservar" element={<ReservarTurno />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/recuperar" element={<RecuperarPassword />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/pago-exitoso" element={<PagoExitoso />} />
+            <Route path="/pago-fallido" element={<PagoFallido />} />
+            <Route path="/pago-pendiente" element={<PagoPendiente />} />
+            <Route
+              path="/mis-turnos"
+              element={
+                <ProtectedRoute>
+                  <MisTurnos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/carrito"
+              element={
+                <ProtectedRoute>
+                  <Carrito />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/panel"
+              element={
+                <ProtectedRoute adminOnly>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/reportes"
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <Reportes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/panel-trabajo"
+              element={
+                <ProtectedRoute adminOnly>
+                  <PanelTrabajo />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/historial"
+              element={
+                <ProtectedRoute adminOnly>
+                  <Historial />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/servicios-admin"
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <ServiciosAdmin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/editar-carrusel"
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <EditarCarrusel />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/editar-horarios"
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <EditarHorariosAdmin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/usuarios"
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <UsuariosAdmin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute adminOnly>
+                  <Navigate to="/admin/panel" replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/turnos"
+              element={
+                <ProtectedRoute adminOnly>
+                  <AdminTurnos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/estadisticas"
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <AdminEstadisticas />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/nosotros" element={<Nosotros />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </main>
+        <Footer />
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+      </div>
+    </AuthProvider>
   );
 }
 

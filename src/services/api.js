@@ -22,6 +22,25 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    if (status === 401) {
+      try {
+        localStorage.removeItem('user');
+      } catch {
+        // ignore
+      }
+      // Evitar loops si ya estamos en login
+      if (typeof window !== 'undefined' && window.location?.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Servicios
 export const serviciosAPI = {
   getAll: () => api.get('/servicios'),
@@ -37,6 +56,7 @@ export const usuariosAPI = {
   getById: (id) => api.get(`/usuarios/${id}`),
   create: (data) => api.post('/usuarios', data),
   update: (id, data) => api.put(`/usuarios/${id}`, data),
+  delete: (id) => api.delete(`/usuarios/${id}`),
   login: (email, password) =>
     api.post('/usuarios/login', { email, password }).then(res => res.data),
 };
@@ -74,7 +94,7 @@ export const horariosAPI = {
     const estado = await horariosAPI.getEstadoDia(fecha);
     return estado.disponibles;
   },
-  getEstadoDia: async (fecha) => {
+  getEstadoDia: async (fecha, options = {}) => {
     const day = new Date(fecha + 'T00:00:00').getDay();
     if (day === 0) return { dia: day, todos: [], ocupados: [], disponibles: [] };
     const [porDiaResp, turnos] = await Promise.all([
@@ -94,7 +114,12 @@ export const horariosAPI = {
     // Considerar ocupados:
     // - Todos los turnos 'pendiente', 'confirmado', 'en_proceso' (excepto los 'en_proceso' rechazados)
     // - Si el turno está 'en_proceso', bloquear el horario hasta que se confirme o rechace
-    const ocupados = turnos
+    const ignoreTurnoId = options?.ignoreTurnoId;
+    const turnosFiltrados = ignoreTurnoId
+      ? turnos.filter((t) => String(t?.id ?? t?._id ?? '') !== String(ignoreTurnoId))
+      : turnos;
+
+    const ocupados = turnosFiltrados
       .filter(t => (
         (["pendiente", "confirmado"].includes(t.estado) && t.estadoTransferencia !== 'rechazado') ||
         (t.estado === 'en_proceso' && t.estadoTransferencia !== 'rechazado')

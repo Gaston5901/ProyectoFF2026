@@ -6,7 +6,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --exec babel-node index.js",
-    "start": "babel-node index.js"
+    "start": "babel-node index.js",
+    "migrate:config-carrusel": "babel-node scripts/migrate-config-carrusel.js",
+    "migrate:config-carrusel:dry": "babel-node scripts/migrate-config-carrusel.js --dry-run",
+    "migrate:servicios-productos": "babel-node scripts/migrate-servicios-productos.js",
+    "migrate:servicios-productos:dry": "babel-node scripts/migrate-servicios-productos.js --dry-run",
+    "migrate:usuarios": "babel-node scripts/migrate-usuarios.js",
+    "migrate:usuarios:dry": "babel-node scripts/migrate-usuarios.js --dry-run",
+    "migrate:turnos": "babel-node scripts/migrate-turnos.js",
+    "migrate:turnos:dry": "babel-node scripts/migrate-turnos.js --dry-run"
   },
   "keywords": [],
   "author": "",
@@ -33,6 +41,7 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.12",
+    "pg": "^8.13.1",
     "resend": "^4.1.0"
   }
 }

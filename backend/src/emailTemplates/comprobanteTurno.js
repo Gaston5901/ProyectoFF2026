@@ -1,12 +1,61 @@
 
 // Plantilla de email de comprobante de turno
 module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, total, pagoId, fecha, hora, extras }) {
-  // Mostrar la fecha como dd/mm/yyyy si viene en formato yyyy-mm-dd
-  let fechaFormateada = fecha;
-  if (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-    const [anio, mes, dia] = fecha.split('-');
-    fechaFormateada = `${dia}/${mes}/${anio}`;
-  }
+  const TZ = 'America/Argentina/Buenos_Aires';
+
+  const normalizeHora = (value) => {
+    let h = String(value || '').trim();
+    if (!h) return '';
+    // HH:MM:SS -> HH:MM
+    if (/^\d{1,2}:\d{1,2}:\d{1,2}$/.test(h)) h = h.slice(0, 5);
+    // H:M -> HH:MM
+    if (/^\d{1,2}:\d{1,2}$/.test(h)) {
+      const [hh, mm] = h.split(':');
+      h = hh.padStart(2, '0') + ':' + mm.padStart(2, '0');
+    }
+    return h;
+  };
+
+  const formatDateShort = (value) => {
+    if (!value) return '';
+
+    // Date -> dd/mm/yyyy
+    if (value instanceof Date) {
+      if (Number.isNaN(value.getTime())) return '';
+      return new Intl.DateTimeFormat('es-AR', {
+        timeZone: TZ,
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }).format(value);
+    }
+
+    const raw = String(value).trim();
+    if (!raw) return '';
+
+    // yyyy-mm-dd[...]
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+      const iso = raw.slice(0, 10);
+      const [anio, mes, dia] = iso.split('-');
+      return `${dia}/${mes}/${anio}`;
+    }
+
+    // Fallback: intentar parsear
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) {
+      return new Intl.DateTimeFormat('es-AR', {
+        timeZone: TZ,
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }).format(d);
+    }
+
+    return raw;
+  };
+
+  const fechaFormateada = formatDateShort(fecha);
+  const horaFormateada = normalizeHora(hora);
   return `
   <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f7f7f7; padding: 0; margin: 0;">
     <table width="100%" cellpadding="0" cellspacing="0" style="background: #f7f7f7; padding: 0; margin: 0;">
@@ -31,7 +80,7 @@ module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, t
                   <b>Total del turno:</b> <span style="color:#d13fa0">$${total}</span><br>
                   <b>ID de pago:</b> <span style="color:#888">${pagoId}</span><br>
                   <b>Fecha:</b> <span style="color:#222">${fechaFormateada}</span>
-                  ${hora && hora !== '-' ? `<b> Hora:</b> <span style="color:#222">${hora}</span>` : ''}
+                  ${horaFormateada && horaFormateada !== '-' ? `<b> Hora:</b> <span style="color:#222">${horaFormateada}</span>` : ''}
                 </div>
                 <hr style="border:none;height:1px;background:linear-gradient(to right,transparent,#d13fa0,transparent);margin:18px 0;" />
                 ${extras ? `<div style='margin:16px 0 12px 0;padding:0;background:none;border-radius:0;display:block;max-width:98vw;'>

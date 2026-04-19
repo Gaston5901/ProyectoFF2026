@@ -113,15 +113,32 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(userWithToken));
         setUser(userWithToken);
         toast.success('¡Bienvenido/a!');
-        // La navegación la maneja el componente Login.jsx
-        return true;
+        return { success: true };
       } else {
         toast.error('Email o contraseña incorrectos');
-        return false;
+        return { success: false, message: 'Email o contraseña incorrectos.' };
       }
     } catch (error) {
-      toast.error('Error al iniciar sesión');
-      return false;
+      // Si hay respuesta del backend
+      if (error?.response) {
+        const msg = error.response.data?.error || error.response.data?.mensaje || '';
+        if (msg.toLowerCase().includes('usuario')) {
+          toast.error('Usuario no encontrado. Registrate.');
+          return { success: false, message: 'Usuario no encontrado. Registrate.' };
+        }
+        if (msg.toLowerCase().includes('contraseña')) {
+          toast.error('Contraseña incorrecta.');
+          return { success: false, message: 'Contraseña incorrecta.' };
+        }
+        toast.error(msg || 'Error al iniciar sesión');
+        return { success: false, message: msg || 'Error al iniciar sesión.' };
+      } else if (error?.message && (error.message.includes('Network') || error.message.includes('timeout'))) {
+        toast.error('Error de conexión. Intenta más tarde.');
+        return { success: false, message: 'Error de conexión. Intenta más tarde.' };
+      } else {
+        toast.error('Error al iniciar sesión');
+        return { success: false, message: 'Error al iniciar sesión.' };
+      }
     }
   };
 
@@ -175,8 +192,11 @@ export const AuthProvider = ({ children }) => {
     spinnerDiv.style.justifyContent = 'center';
     spinnerDiv.style.zIndex = 9999;
     let spinnerColor = '#ffb6d5', spinnerTop = '#ad1457', title = '', subtitle = '', titleColor = '#ad1457', subColor = '#d81b60';
-    if (currentUser && (currentUser.rol === 'admin' || currentUser.rol === 'superadmin')) {
-      title = '¡Adiós admin!';
+    if (currentUser && currentUser.rol === 'superadmin') {
+      title = '¡Hasta luego super admin!';
+      subtitle = 'Cerrando sesión...';
+    } else if (currentUser && currentUser.rol === 'admin') {
+      title = '¡Hasta luego admin!';
       subtitle = 'Cerrando sesión...';
     } else if (currentUser) {
       spinnerColor = '#90caf9'; spinnerTop = '#1976d2'; titleColor = '#1976d2'; subColor = '#1976d2';

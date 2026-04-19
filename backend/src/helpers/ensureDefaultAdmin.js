@@ -1,34 +1,56 @@
 import UsuariosModel from "../models/usuariosSchema.js";
 
 export async function ensureDefaultAdmin() {
-  const adminEmail = (process.env.DEFAULT_ADMIN_EMAIL || "admin@turnos.com").toLowerCase().trim();
-  const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD || "admin123";
+  const superAdminEmail = (
+    process.env.DEFAULT_SUPERADMIN_EMAIL ||
+    process.env.DEFAULT_ADMIN_EMAIL ||
+    "admin@turnos.com"
+  )
+    .toLowerCase()
+    .trim();
+  const superAdminPassword =
+    process.env.DEFAULT_SUPERADMIN_PASSWORD ||
+    process.env.DEFAULT_ADMIN_PASSWORD ||
+    "admin123";
+  const superAdminNombre = (process.env.DEFAULT_SUPERADMIN_NOMBRE || "Triny").trim();
 
   try {
     // Compat: si la colección tiene documentos legacy con `username`, también matcheamos por ahí.
-    let admin = await UsuariosModel.findOne({ email: adminEmail });
+    let admin = await UsuariosModel.findOne({ email: superAdminEmail });
     if (!admin) {
-      admin = await UsuariosModel.findOne({ username: adminEmail });
+      admin = await UsuariosModel.findOne({ username: superAdminEmail });
     }
 
     if (!admin) {
       const nuevo = new UsuariosModel({
-        nombre: "Admin",
-        email: adminEmail,
+        nombre: superAdminNombre,
+        email: superAdminEmail,
         telefono: "",
-        password: adminPassword,
-        rol: "admin",
+        password: superAdminPassword,
+        rol: "superadmin",
       });
       await nuevo.save();
-      console.log(`[Seed] Admin creado: ${adminEmail}`);
+      console.log(`[Seed] Superadmin creado: ${superAdminEmail} (${superAdminNombre})`);
       return;
     }
 
-    // Asegurar rol admin (si venía de antes con otro valor)
-    if (admin.rol !== "admin" && admin.rol !== "superadmin") {
-      admin.rol = "admin";
+    let changed = false;
+
+    // Asegurar rol superadmin (dueña)
+    if (admin.rol !== "superadmin") {
+      admin.rol = "superadmin";
+      changed = true;
+    }
+
+    // Asegurar nombre fijo (Triny)
+    if (String(admin.nombre || '').trim() !== superAdminNombre) {
+      admin.nombre = superAdminNombre;
+      changed = true;
+    }
+
+    if (changed) {
       await admin.save();
-      console.log(`[Seed] Rol admin asegurado para: ${adminEmail}`);
+      console.log(`[Seed] Superadmin asegurado para: ${superAdminEmail} (${admin.nombre})`);
     }
   } catch (error) {
     console.error("[Seed] Error asegurando admin por defecto:", error);

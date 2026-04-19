@@ -38,6 +38,18 @@ const usuarioSchema = new mongoose.Schema(
       default: "cliente",
     },
 
+    suspendido: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    oculto: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
     passwordResetTokenHash: {
       type: String,
       default: null,

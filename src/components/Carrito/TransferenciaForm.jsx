@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCarrito } from '../../store/useCarritoStore';
 import { toast } from 'react-toastify';
@@ -7,6 +7,7 @@ import api from '../../services/api';
 import { FaRegCopy } from 'react-icons/fa6';
 import { FaCircle } from 'react-icons/fa';
 import { FaArrowRight } from 'react-icons/fa';
+import { FaChevronDown } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 
 const aliasList = [
@@ -14,15 +15,59 @@ const aliasList = [
   'TZELARAYANSAN.NX.ARS',
 ];
 
+const metodoOpcionesBase = [
+  'Banco BBVA',
+  'Banco Ciudad',
+  'Banco Comafi',
+  'Banco Credicoop',
+  'Banco de Corrientes',
+  'Banco de Córdoba',
+  'Banco de Entre Ríos',
+  'Banco de Formosa',
+  'Banco de Galicia',
+  'Banco de la Nación Argentina',
+  'Banco de la Provincia de Buenos Aires',
+  'Banco de la Provincia de Córdoba',
+  'Banco de la Provincia de Tierra del Fuego',
+  'Banco de la Provincia del Chaco',
+  'Banco de la Provincia del Neuquén',
+  'Banco de la Provincia del Chubut',
+  'Banco de la Provincia de Santa Fe',
+  'Banco de la Provincia de Santa Cruz',
+  'Banco de la Provincia de San Juan',
+  'Banco Hipotecario',
+  'Banco Industrial (BIND)',
+  'Banco Macro',
+  'Banco Patagonia',
+  'Banco Piano',
+  'Banco Santander',
+  'Banco Supervielle',
+  'Banco del Sol',
+  'Brubank',
+  'Cuenta DNI',
+  'Lemon',
+  'Mercado Pago',
+  'MODO',
+  'Naranja X',
+  'Personal Pay',
+  'Prex',
+  'Reba',
+  'Ualá',
+];
+
 const TransferenciaForm = () => {
   const { items, calcularTotal, vaciarCarrito } = useCarrito();
   const { user } = useAuth();
   const [nombreTitular, setNombreTitular] = useState('');
   const [metodo, setMetodo] = useState('');
+  const [metodoOpen, setMetodoOpen] = useState(false);
   const [comprobante, setComprobante] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [showError, setShowError] = useState(false);
+  const lastHintAtRef = useRef(0);
+  const metodoInputRef = useRef(null);
+  const closeMetodoTimerRef = useRef(null);
   const navigate = useNavigate();
 
   const handleFileChange = e => {
@@ -121,6 +166,43 @@ const TransferenciaForm = () => {
   const senia = Math.round(monto * 0.5);
 
   const camposCompletos = nombreTitular && comprobante && metodo;
+  const metodoOpciones = useMemo(() => {
+    const uniq = Array.from(new Set(metodoOpcionesBase.map((v) => String(v).trim()).filter(Boolean)));
+    uniq.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+    return uniq;
+  }, []);
+
+  const metodoOpcionesFiltradas = useMemo(() => {
+    const normalize = (txt) => String(txt || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+
+    const q = normalize(metodo);
+    if (!q) return metodoOpciones;
+    return metodoOpciones.filter((op) => normalize(op).includes(q));
+  }, [metodo, metodoOpciones]);
+
+  const showCamposHint = () => {
+    if (camposCompletos || enviando) return;
+    const now = Date.now();
+    if (now - (lastHintAtRef.current || 0) < 1500) return;
+    lastHintAtRef.current = now;
+
+    Swal.fire({
+      icon: 'info',
+      title: 'Faltan datos',
+      text: 'Completá todos los campos y adjuntá el comprobante.',
+      timer: 2200,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top',
+      customClass: {
+        popup: 'swal2-toast-fino'
+      }
+    });
+  };
 
   return (
     <form onSubmit={handleSubmit} style={{
@@ -158,12 +240,121 @@ const TransferenciaForm = () => {
       <label style={{fontWeight:600}}>Nombre del titular que transfiere:
         <input type="text" value={nombreTitular} onChange={e=>setNombreTitular(e.target.value)} required style={{width:'100%',marginTop:6,padding:8,borderRadius:6,border:'1.5px solid #e91e63'}} />
       </label>
-      <label style={{fontWeight:600,marginTop:2}}>Método:
-        <select value={metodo} onChange={e=>setMetodo(e.target.value)} required style={{width:'100%',marginTop:6,padding:8,borderRadius:6,border:'1.5px solid #e91e63'}}>
-          <option value="" disabled>Selecciona el método de pago</option>
-          <option value="Tarjeta Naranja">Tarjeta Naranja</option>
-          <option value="Mercado Pago">Mercado Pago</option>
-        </select>
+      <label style={{fontWeight:600,marginTop:2}}>Banco / billetera (buscá o elegí):
+        <div style={{ position: 'relative', marginTop: 6 }}>
+          <input
+            ref={metodoInputRef}
+            type="text"
+            value={metodo}
+            onChange={e=>{
+              setMetodo(e.target.value);
+              setMetodoOpen(true);
+            }}
+            onFocus={() => {
+              if (closeMetodoTimerRef.current) clearTimeout(closeMetodoTimerRef.current);
+              setMetodoOpen(true);
+            }}
+            onBlur={() => {
+              closeMetodoTimerRef.current = setTimeout(() => setMetodoOpen(false), 120);
+            }}
+            required
+            placeholder="Buscá o escribí (ej: Galicia, Ualá, Mercado Pago)"
+            aria-label="Banco o billetera (buscá o elegí)"
+            style={{
+              width:'100%',
+              padding: 8,
+              paddingRight: 36,
+              borderRadius: 6,
+              border:'1.5px solid #e91e63'
+            }}
+          />
+
+          <button
+            type="button"
+            aria-label="Mostrar lista de bancos y billeteras"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              if (closeMetodoTimerRef.current) clearTimeout(closeMetodoTimerRef.current);
+              setMetodoOpen((v) => !v);
+              metodoInputRef.current?.focus();
+            }}
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 26,
+              height: 26,
+              borderRadius: 8,
+              border: '1px solid rgba(233, 30, 99, 0.25)',
+              background: 'rgba(233, 30, 99, 0.06)',
+              color: '#e91e63',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <FaChevronDown size={14} />
+          </button>
+
+          {metodoOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                top: 'calc(100% + 6px)',
+                background: '#fff',
+                border: '1px solid rgba(233, 30, 99, 0.22)',
+                borderRadius: 10,
+                boxShadow: '0 10px 24px rgba(0,0,0,0.12)',
+                maxHeight: 220,
+                overflowY: 'auto',
+                zIndex: 50,
+                padding: 6
+              }}
+              role="listbox"
+              aria-label="Opciones banco/billetera"
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              {metodoOpcionesFiltradas.length > 0 ? (
+                metodoOpcionesFiltradas.map((op) => (
+                  <button
+                    key={op}
+                    type="button"
+                    onClick={() => {
+                      setMetodo(op);
+                      setMetodoOpen(false);
+                      metodoInputRef.current?.focus();
+                    }}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      color: '#333'
+                    }}
+                  >
+                    {op}
+                  </button>
+                ))
+              ) : (
+                <div style={{ padding: '10px 10px', color: '#777', fontSize: 13, fontWeight: 600 }}>
+                  No se encontraron resultados.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 6, fontSize: 12, color: '#666', fontWeight: 500 }}>
+          Podés escribir el nombre o elegirlo de la lista.
+        </div>
       </label>
       <label style={{fontWeight:600,marginTop:2}}>Comprobante (foto o PDF):
         <div style={{position:'relative',width:'100%',marginTop:6}}>
@@ -214,53 +405,60 @@ const TransferenciaForm = () => {
         )}
       </label>
       <div style={{fontWeight:600,marginTop:8}}>Seña a transferir: <span style={{fontWeight:700,color:'#e91e63',fontSize:20}}>${senia}</span></div>
-      <button type="submit" disabled={enviando || !camposCompletos} style={{
-        background: camposCompletos ? 'linear-gradient(90deg,#d32f2f 0%,#ff5252 100%)' : '#eee',
-        color: camposCompletos ? '#fff' : '#aaa',
-        border: 'none',
-        borderRadius: 22,
-        padding: '8px 0',
-        fontWeight: 700,
-        fontSize: 16,
-        marginTop: 14,
-        cursor: enviando || !camposCompletos ? 'not-allowed' : 'pointer',
-        boxShadow: camposCompletos ? '0 2px 8px #d32f2f22' : 'none',
-        letterSpacing: 0.5,
-        transition: 'background 0.2s, box-shadow 0.2s',
-        outline: 'none',
-        position: 'relative',
-        overflow: 'hidden',
-        opacity: enviando || !camposCompletos ? 0.7 : 1,
-        borderBottom: camposCompletos ? '2px solid #b71c1c' : 'none',
-        width: '70%',
-        marginLeft: 'auto',
-        marginRight: 'auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-      onMouseOver={e => {
-        if (camposCompletos) e.currentTarget.style.background = 'linear-gradient(90deg,#ff5252 0%,#d32f2f 100%)';
-      }}
-      onMouseOut={e => {
-        if (camposCompletos) e.currentTarget.style.background = 'linear-gradient(90deg,#d32f2f 0%,#ff5252 100%)';
-      }}
-    >
-        <span style={{marginLeft:16}}>{enviando ? 'Solicitando turno...' : 'Solicitar turno'}</span>
-        <span style={{
-          background:'#fff',
-          borderRadius:'50%',
-          width:28,
-          height:28,
-          display:'flex',
-          alignItems:'center',
-          justifyContent:'center',
-          marginRight:8,
-          boxShadow:'0 1px 4px #d32f2f22',
-        }}>
-          <FaArrowRight color={camposCompletos ? '#d32f2f' : '#aaa'} size={18} />
-        </span>
-      </button>
+      <div
+        onMouseEnter={showCamposHint}
+        onClick={showCamposHint}
+        style={{ display: 'flex', justifyContent: 'center' }}
+      >
+        <button
+          type="submit"
+          disabled={enviando || !camposCompletos}
+          style={{
+            background: camposCompletos ? 'linear-gradient(90deg,#d32f2f 0%,#ff5252 100%)' : '#eee',
+            color: camposCompletos ? '#fff' : '#aaa',
+            border: 'none',
+            borderRadius: 22,
+            padding: '8px 0',
+            fontWeight: 700,
+            fontSize: 16,
+            marginTop: 14,
+            cursor: enviando || !camposCompletos ? 'not-allowed' : 'pointer',
+            boxShadow: camposCompletos ? '0 2px 8px #d32f2f22' : 'none',
+            letterSpacing: 0.5,
+            transition: 'background 0.2s, box-shadow 0.2s',
+            outline: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            opacity: enviando || !camposCompletos ? 0.7 : 1,
+            borderBottom: camposCompletos ? '2px solid #b71c1c' : 'none',
+            width: '70%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+          onMouseOver={e => {
+            if (camposCompletos) e.currentTarget.style.background = 'linear-gradient(90deg,#ff5252 0%,#d32f2f 100%)';
+          }}
+          onMouseOut={e => {
+            if (camposCompletos) e.currentTarget.style.background = 'linear-gradient(90deg,#d32f2f 0%,#ff5252 100%)';
+          }}
+        >
+          <span style={{marginLeft:16}}>{enviando ? 'Solicitando turno...' : 'Solicitar turno'}</span>
+          <span style={{
+            background:'#fff',
+            borderRadius:'50%',
+            width:28,
+            height:28,
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            marginRight:8,
+            boxShadow:'0 1px 4px #d32f2f22',
+          }}>
+            <FaArrowRight color={camposCompletos ? '#d32f2f' : '#aaa'} size={18} />
+          </span>
+        </button>
+      </div>
     </form>
   );
 };

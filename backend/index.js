@@ -3,8 +3,10 @@ import cors from 'cors';
 import morgan from 'morgan';
 import path from 'path';
 import "dotenv/config";
-import './src/database/dbConnection.js';
+import { initDb } from './src/database/initDb.js';
 import mongoose from 'mongoose';
+import { getDbProvider, isPostgres } from './src/config/dbProvider.js';
+import { pgQuery } from './src/database/postgres.js';
 
 
 import productosRoutes from './src/routes/productos.routes.js';
@@ -28,7 +30,7 @@ app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Health check para verificar deployment + conexión a DB
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   const states = {
     0: 'disconnected',
     1: 'connected',
@@ -36,15 +38,27 @@ app.get('/api/health', (req, res) => {
     3: 'disconnecting',
   };
   const readyState = mongoose?.connection?.readyState;
-  res.json({
+  const payload = {
     ok: true,
+    provider: getDbProvider(),
     now: new Date().toISOString(),
     mongo: {
       readyState,
       status: states[readyState] || 'unknown',
       name: mongoose?.connection?.name,
     },
-  });
+  };
+
+  if (isPostgres()) {
+    try {
+      await pgQuery('SELECT 1');
+      payload.postgres = { ok: true };
+    } catch (e) {
+      payload.postgres = { ok: false, error: e?.message };
+    }
+  }
+
+  res.json(payload);
 });
 
 
@@ -61,7 +75,13 @@ app.use('/api/pagos', pagoRoutes);
 app.use('/api/pago', pagoRoutes);
 app.use('/api', webhookRoutes);
 
-app.set('port', process.env.PORT || 4000);
-app.listen(app.get('port'), () => {
-  console.log(`app running on port ${app.get('port')}`);
-});
+async function start() {
+  await initDb();
+
+  app.set('port', process.env.PORT || 4000);
+  app.listen(app.get('port'), () => {
+    console.log(`app running on port ${app.get('port')}`);
+  });
+}
+
+start();
