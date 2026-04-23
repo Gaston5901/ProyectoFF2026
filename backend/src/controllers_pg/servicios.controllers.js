@@ -9,6 +9,7 @@ function mapServicioRow(row) {
     precio: Number(row.precio),
     duracion: Number(row.duracion_min),
     imagen: row.imagen_url || '',
+    activo: row.activo == null ? true : Boolean(row.activo),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -31,13 +32,17 @@ export const crearServicio = async (req, res) => {
     );
     return res.status(201).json(mapServicioRow(rows[0]));
   } catch (error) {
+    // unique_violation (servicios_nombre_uq)
+    if (error?.code === '23505') {
+      return res.status(409).json({ mensaje: 'Ya existe un servicio con ese nombre' });
+    }
     return res.status(400).json({ mensaje: error.message });
   }
 };
 
 export const obtenerServicios = async (_req, res) => {
   try {
-    const { rows } = await pgQuery('SELECT * FROM servicios ORDER BY id ASC');
+    const { rows } = await pgQuery('SELECT * FROM servicios WHERE activo = true ORDER BY id ASC');
     return res.json(rows.map(mapServicioRow));
   } catch (error) {
     return res.status(500).json({ mensaje: error.message });
@@ -82,16 +87,47 @@ export const actualizarServicio = async (req, res) => {
     if (!rows[0]) return res.status(404).json({ mensaje: 'Servicio no encontrado' });
     return res.json(mapServicioRow(rows[0]));
   } catch (error) {
+    if (error?.code === '23505') {
+      return res.status(409).json({ mensaje: 'Ya existe un servicio con ese nombre' });
+    }
     return res.status(400).json({ mensaje: error.message });
   }
 };
 
 export const eliminarServicio = async (req, res) => {
   try {
-    const { rowCount } = await pgQuery('DELETE FROM servicios WHERE id = $1', [req.params.id]);
+    const id = req.params.id;
+
+    // Si el servicio está referenciado por turnos, no permitir borrado.
+    const { rows: usedRows } = await pgQuery(
+      'SELECT count(*)::int AS count FROM turnos WHERE servicio_id = $1',
+      [id]
+    );
+    const usedCount = Number(usedRows?.[0]?.count || 0);
+    if (usedCount > 0) {
+      const { rows } = await pgQuery(
+        `UPDATE servicios
+         SET activo = false,
+             updated_at = now()
+         WHERE id = $1
+         RETURNING *`,
+        [id]
+      );
+      if (!rows[0]) return res.status(404).json({ mensaje: 'Servicio no encontrado' });
+      return res.json({
+        mensaje: `Servicio archivado (tenía ${usedCount} turno(s) asociado(s)).`,
+        servicio: mapServicioRow(rows[0]),
+      });
+    }
+
+    const { rowCount } = await pgQuery('DELETE FROM servicios WHERE id = $1', [id]);
     if (!rowCount) return res.status(404).json({ mensaje: 'Servicio no encontrado' });
     return res.json({ mensaje: 'Servicio eliminado' });
   } catch (error) {
+    // foreign_key_violation (por si cambió el schema o hay otras FKs)
+    if (error?.code === '23503') {
+      return res.status(409).json({ mensaje: 'No se puede eliminar el servicio: está en uso.' });
+    }
     return res.status(500).json({ mensaje: error.message });
   }
 };

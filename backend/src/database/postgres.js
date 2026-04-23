@@ -38,6 +38,43 @@ export async function initPostgres() {
     await pgQuery('select 1 as ok');
     console.log(`[postgres] conectado OK (${db})`);
 
+    // Migración liviana: la app usa `turnos.pago_id` como ID de pago legible.
+    // Algunas instalaciones pueden no tener aún esa columna (schema antiguo).
+    try {
+      const { rows: colRows } = await pgQuery(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'turnos'
+           AND column_name = 'pago_id'
+         LIMIT 1`
+      );
+      if (!colRows?.[0]) {
+        await pgQuery(`ALTER TABLE turnos ADD COLUMN pago_id TEXT NOT NULL DEFAULT ''`);
+        console.log('[postgres] migración aplicada: turnos.pago_id');
+      }
+    } catch (e) {
+      console.warn('[postgres] no se pudo asegurar turnos.pago_id:', e?.message || e);
+    }
+
+    // Migración liviana: soft delete de servicios (archivar) via `servicios.activo`
+    try {
+      const { rows: colRows } = await pgQuery(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'servicios'
+           AND column_name = 'activo'
+         LIMIT 1`
+      );
+      if (!colRows?.[0]) {
+        await pgQuery(`ALTER TABLE servicios ADD COLUMN activo BOOLEAN NOT NULL DEFAULT TRUE`);
+        console.log('[postgres] migración aplicada: servicios.activo');
+      }
+    } catch (e) {
+      console.warn('[postgres] no se pudo asegurar servicios.activo:', e?.message || e);
+    }
+
     // Seed / asegurar superadmin por defecto (similar a ensureDefaultAdmin en Mongo)
     const superAdminEmail = (
       process.env.DEFAULT_SUPERADMIN_EMAIL ||

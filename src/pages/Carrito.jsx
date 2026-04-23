@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCarrito } from '../store/useCarritoStore';
 import { useAuth } from '../context/AuthContext';
 import { horariosAPI, turnosAPI } from '../services/api';
-import { ShoppingCart, Trash2, CreditCard } from 'lucide-react';
+import { ShoppingCart, Trash2, CreditCard, Plus, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
 import './Carrito.css';
@@ -446,20 +446,42 @@ const Carrito = () => {
       <div className="container">
         <div className="carrito-content">
           <div className="carrito-items">
-            {items.map((item) => (
-              <div key={item.id} className="carrito-item">
-                <div className="item-info">
-                  <h3>{item.servicio?.nombre || ''}</h3>
-                  <p className="item-fecha">📅 {format(new Date(item.fecha + 'T00:00:00'), 'dd/MM/yyyy')} - 🕐 {item.hora} hs</p>
-                  <p className="item-duracion">⏱️ Duración: {item.servicio?.duracion || 0} minutos</p>
-                </div>
-                <div className="item-precio">
-                  <div className="precio-total"><span className="label">Precio total:</span><span className="valor">${(item.servicio?.precio || 0).toLocaleString()}</span></div>
-                  <div className="precio-seña"><span className="label">Seña (50%):</span><span className="valor">${((item.servicio?.precio || 0) / 2).toLocaleString()}</span></div>
-                </div>
-                <button className="btn-eliminar" onClick={() => eliminarDelCarrito(item.id)} title="Eliminar"><Trash2 size={20} /></button>
+            <div className="carrito-items-box">
+              <div className="carrito-items-header">
+                <h3>Servicios en tu carrito</h3>
+                <span className="carrito-items-count">
+                  {items.length} {items.length === 1 ? 'servicio' : 'servicios'}
+                </span>
               </div>
-            ))}
+
+              <div className="carrito-items-list">
+                {items.map((item) => (
+                  <div key={item.id} className="carrito-item">
+                    <div className="item-info">
+                      <h3>{item.servicio?.nombre || ''}</h3>
+                      <p className="item-fecha">📅 {format(new Date(item.fecha + 'T00:00:00'), 'dd/MM/yyyy')} - 🕐 {item.hora} hs</p>
+                      <p className="item-duracion">⏱️ Duración: {item.servicio?.duracion || 0} minutos</p>
+                    </div>
+                    <div className="item-precio">
+                      <div className="precio-total"><span className="label">Precio total:</span><span className="valor">${(item.servicio?.precio || 0).toLocaleString()}</span></div>
+                      <div className="precio-seña"><span className="label">Seña (50%):</span><span className="valor">${((item.servicio?.precio || 0) / 2).toLocaleString()}</span></div>
+                    </div>
+                    <button className="btn-eliminar" onClick={() => eliminarDelCarrito(item.id)} title="Eliminar"><Trash2 size={20} /></button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="carrito-items-actions">
+                <button
+                  className="btn btn-secondary carrito-add-btn"
+                  type="button"
+                  onClick={() => navigate('/reservar')}
+                >
+                  <Plus size={18} />
+                  Agregar más servicios
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="carrito-resumen" ref={resumenRef}>
@@ -477,11 +499,24 @@ const Carrito = () => {
               {/* <button className="btn btn-primary btn-pagar" onClick={procesarPago} disabled={procesando}>
                 {procesando ? (<><div className="spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>Procesando...</>) : (<><CreditCard size={20} />Pagar (prueba local)</>)}
               </button> */}
-              {/* <button className="btn btn-secondary btn-pagar" style={{marginTop:8}} onClick={pagarConMercadoPago} disabled={procesando}>
-                {procesando ? (<><div className="spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>Procesando...</>) : (<><CreditCard size={20} />Pagar con Mercado Pago</>)}
-              </button> */}
-              <PagarConTransferenciaBtn />
-              <button className="btn btn-secondary mt-2" onClick={() => navigate('/reservar')}>Agregar más servicios</button>
+              <div className="carrito-pay-title">Elegí tu medio de pago</div>
+              <div className="carrito-pay-actions">
+                <button className="btn btn-secondary btn-pagar" onClick={pagarConMercadoPago} disabled={procesando}>
+                  {procesando ? (
+                    <>
+                      <div className="spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <Wallet size={20} />
+                      Mercado Pago
+                    </>
+                  )}
+                </button>
+
+                <PagarConTransferenciaBtn />
+              </div>
             </div>
           </div>
         </div>

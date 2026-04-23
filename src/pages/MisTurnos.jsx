@@ -19,6 +19,45 @@ const parseTurnoDateTime = (turno) => {
   return dt;
 };
 
+const getEstadoBadgeInfo = (turno) => {
+  let badge = '';
+  let badgeClass = 'turno-badge';
+
+  if (turno?.estado === 'cancelado') {
+    badge = 'CANCELADO';
+    badgeClass += ' cancelado';
+  } else if (turno?.estadoTransferencia === 'rechazado' || turno?.estado === 'rechazado') {
+    badge = 'RECHAZADO';
+    badgeClass += ' rechazado-violeta';
+  } else {
+    switch (turno?.estado) {
+      case 'en_proceso':
+        badge = 'EN PROCESO';
+        badgeClass += ' en-proceso';
+        break;
+      case 'devuelto':
+        badge = 'DEVUELTO';
+        badgeClass += ' devuelto';
+        break;
+      case 'confirmado':
+        badge = 'CONFIRMADO';
+        badgeClass += ' confirmado';
+        break;
+      case 'expirado':
+        badge = 'EXPIRADO';
+        badgeClass += ' expirado';
+        break;
+      case 'completado':
+      default:
+        badge = 'COMPLETADO';
+        badgeClass += ' completado';
+        break;
+    }
+  }
+
+  return { badge, badgeClass };
+};
+
 // Banner serpiente animado fino y colorido debajo del título
 function SnakeBanner({ show }) {
   if (!show) return null;
@@ -130,6 +169,8 @@ function ModalTurnoDetalle({ turno, servicio, onClose, onCancelar, puedeCancelar
   const montoPagado = Number(turno?.montoPagado ?? 0);
   const resta = Number.isFinite(montoTotal - montoPagado) ? montoTotal - montoPagado : 0;
 
+  const { badge, badgeClass } = getEstadoBadgeInfo(turno);
+
   return (
     <>
       <style>{`
@@ -208,7 +249,27 @@ function ModalTurnoDetalle({ turno, servicio, onClose, onCancelar, puedeCancelar
         </div>
 
         <div style={{ marginTop: 12, fontSize: 15, lineHeight: 1.8, color: '#333' }}>
-          <div><b>Estado:</b> <span style={{ fontWeight: 800 }}>{String(turno?.estado || '-').split('_').join(' ')}</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <b>Estado:</b>
+            <span
+              className={badgeClass}
+              style={{
+                position: 'static',
+                top: 'auto',
+                right: 'auto',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '3px 10px',
+                borderRadius: 999,
+                boxShadow: 'none',
+                fontSize: 11,
+                letterSpacing: '0.3px',
+              }}
+            >
+              {badge || String(turno?.estado || '-').split('_').join(' ').toUpperCase()}
+            </span>
+          </div>
 
           <hr style={{ border: 'none', height: 1, background: 'linear-gradient(to right, transparent, #d13fa0, transparent)', margin: '14px 0' }} />
 
@@ -436,39 +497,7 @@ const MisTurnos = () => {
                       const servicio = servicios[turno.servicioId] || servicios[turno.servicio] || turno.servicio;
                       const nombreServicio = typeof servicio === 'string' ? servicio : (servicio?.nombre || 'Servicio');
 
-                      let badge = '';
-                      let badgeClass = 'turno-badge';
-                      if (turno.estado === 'cancelado') {
-                        badge = 'cancelado';
-                        badgeClass += ' cancelado';
-                      } else if (turno.estadoTransferencia === 'rechazado' || turno.estado === 'rechazado') {
-                        badge = 'rechazado';
-                        badgeClass += ' rechazado-violeta';
-                      } else {
-                        switch (turno.estado) {
-                          case 'en_proceso':
-                            badge = 'en proceso';
-                            badgeClass += ' en-proceso';
-                            break;
-                          case 'devuelto':
-                            badge = 'devuelto';
-                            badgeClass += ' devuelto';
-                            break;
-                          case 'confirmado':
-                            badge = 'confirmado';
-                            badgeClass += ' confirmado';
-                            break;
-                          case 'expirado':
-                            badge = 'expirado';
-                            badgeClass += ' expirado';
-                            break;
-                          case 'completado':
-                          default:
-                            badge = 'completado';
-                            badgeClass += ' completado';
-                            break;
-                        }
-                      }
+                      const { badge, badgeClass } = getEstadoBadgeInfo(turno);
 
                       const rowNum = start + idx + 1;
                       const turnoId = getTurnoId(turno) || `${rowNum}`;

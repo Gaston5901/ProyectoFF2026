@@ -1,4 +1,5 @@
 import ServiciosModel from "../models/serviciosSchema.js";
+import TurnosModel from "../models/turnosSchema.js";
 
 export const crearServicio = async (req, res) => {
   try {
@@ -15,7 +16,8 @@ export const crearServicio = async (req, res) => {
 
 export const obtenerServicios = async (req, res) => {
   try {
-    const servicios = await ServiciosModel.find();
+    // Solo servicios activos (no archivados)
+    const servicios = await ServiciosModel.find({ activo: { $ne: false } });
     const serviciosMap = servicios.map(s => {
       const obj = s.toObject();
       obj.id = obj._id;
@@ -58,7 +60,23 @@ export const actualizarServicio = async (req, res) => {
 
 export const eliminarServicio = async (req, res) => {
   try {
-    const servicio = await ServiciosModel.findByIdAndDelete(req.params.id);
+    const id = req.params.id;
+
+    const usedCount = await TurnosModel.countDocuments({ servicio: id });
+    if (usedCount > 0) {
+      const servicio = await ServiciosModel.findByIdAndUpdate(
+        id,
+        { activo: false },
+        { new: true }
+      );
+      if (!servicio) return res.status(404).json({ mensaje: "Servicio no encontrado" });
+      return res.json({
+        mensaje: `Servicio archivado (tenía ${usedCount} turno(s) asociado(s)).`,
+        servicio: { ...servicio.toObject(), id: servicio._id },
+      });
+    }
+
+    const servicio = await ServiciosModel.findByIdAndDelete(id);
     if (!servicio) return res.status(404).json({ mensaje: "Servicio no encontrado" });
     res.json({ mensaje: "Servicio eliminado" });
   } catch (error) {

@@ -83,6 +83,9 @@ CREATE TABLE IF NOT EXISTS servicios (
   duracion_min INTEGER NOT NULL,
   imagen_url TEXT NOT NULL DEFAULT '',
 
+  -- Borrado lógico: cuando un servicio está en uso por turnos, se archiva en vez de eliminarlo
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
+
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
@@ -203,6 +206,9 @@ CREATE INDEX IF NOT EXISTS pagos_paid_at_idx ON pagos (paid_at);
 CREATE TABLE IF NOT EXISTS turnos (
   id BIGSERIAL PRIMARY KEY,
   mongo_id TEXT UNIQUE,
+
+  -- ID pago legible (ej: PRESENCIAL-007, TRANSFERENCIA-012)
+  pago_id TEXT NOT NULL DEFAULT '',
 
   usuario_id BIGINT NOT NULL REFERENCES usuarios(id) ON UPDATE CASCADE ON DELETE RESTRICT,
   servicio_id BIGINT NOT NULL REFERENCES servicios(id) ON UPDATE CASCADE ON DELETE RESTRICT,

@@ -34,6 +34,8 @@ function mapTurnoRow(row) {
 
     email: row.email || '',
     nombre: row.nombre || '',
+    username: row.usuario_username || row.username || '',
+    usuarioNombre: row.usuario_nombre || '',
     telefono: row.telefono || '',
 
     comentario: row.comentario || '',
@@ -61,6 +63,28 @@ async function getConfigHorariosPorDia() {
   return rows?.[0]?.horarios_por_dia || {};
 }
 
+async function getPorcentajeSenia() {
+  const { rows } = await pgQuery('SELECT porcentaje_senia FROM configuracion WHERE id = 1 LIMIT 1');
+  const raw = rows?.[0]?.porcentaje_senia;
+  const val = raw == null ? 50 : Number(raw);
+  if (!Number.isFinite(val)) return 50;
+  return Math.min(100, Math.max(0, val));
+}
+
+function round2(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n * 100) / 100;
+}
+
+function computeSenia(montoTotal, porcentajeSenia) {
+  const total = Number(montoTotal);
+  if (!Number.isFinite(total) || total <= 0) return 0;
+  const pct = Number(porcentajeSenia);
+  if (!Number.isFinite(pct) || pct <= 0) return 0;
+  return round2(total * (pct / 100));
+}
+
 function computeHorariosValidos(horariosPorDia, fecha) {
   const day = new Date(fecha + 'T00:00:00').getDay();
   const normales = Array.isArray(horariosPorDia[String(day)]) ? horariosPorDia[String(day)] : [];
@@ -77,6 +101,31 @@ async function getServicioForEmail(servicioId) {
 function shouldSendEmail(req) {
   const v = req?.body?.enviarEmail;
   return v !== false && v !== 'false';
+}
+
+async function resolveNombreParaEmailFromTurnoRow(turnoRow) {
+  const nombreTurno = String(turnoRow?.nombre || '').trim();
+  if (nombreTurno) return nombreTurno;
+
+  const usuarioId = turnoRow?.usuario_id;
+  if (usuarioId != null) {
+    try {
+      const { rows } = await pgQuery('SELECT nombre, username, email FROM usuarios WHERE id = $1 LIMIT 1', [usuarioId]);
+      const u = rows?.[0];
+      const nombreUsuario = String(u?.nombre || '').trim();
+      if (nombreUsuario) return nombreUsuario;
+      const username = String(u?.username || '').trim();
+      if (username) return username.split('@')[0] || username;
+      const emailUsuario = String(u?.email || '').trim();
+      if (emailUsuario) return emailUsuario.split('@')[0] || emailUsuario;
+    } catch {
+      // ignore
+    }
+  }
+
+  const email = String(turnoRow?.email || '').trim();
+  if (email) return email.split('@')[0] || email;
+  return 'cliente';
 }
 
 function withTimeout(promise, ms) {
@@ -111,7 +160,13 @@ async function findOrCreateUsuarioByEmail({ emailNorm, nombre, telefono, passwor
 // Obtener turnos en proceso (para admin confirmar/rechazar transferencia)
 export const obtenerTurnosEnProceso = async (_req, res) => {
   try {
-    const { rows } = await pgQuery(`SELECT * FROM turnos WHERE estado = 'en_proceso' ORDER BY fecha ASC, hora ASC`);
+    const { rows } = await pgQuery(
+      `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
+       FROM turnos t
+       LEFT JOIN usuarios u ON u.id = t.usuario_id
+       WHERE t.estado = 'en_proceso'
+       ORDER BY t.fecha ASC, t.hora ASC`
+    );
     return res.json(rows.map(mapTurnoRow));
   } catch (error) {
     return res.status(500).json({ mensaje: error.message });
@@ -125,7 +180,10 @@ export const aprobarTransferencia = async (req, res) => {
        SET estado_transferencia = 'aprobado',
            motivo_rechazo_transferencia = '',
            estado = 'confirmado',
-           monto_pagado = round(((monto_total / 2.0))::numeric, 2),
+           monto_pagado = CASE
+             WHEN COALESCE(monto_pagado, 0) <= 0 THEN round(((monto_total * (SELECT COALESCE(porcentaje_senia, 50) FROM configuracion WHERE id = 1) / 100.0))::numeric, 2)
+             ELSE monto_pagado
+           END,
            updated_at = now()
        WHERE id = $1
        RETURNING *`,
@@ -133,7 +191,51 @@ export const aprobarTransferencia = async (req, res) => {
     );
 
     if (!rows[0]) return res.status(404).json({ mensaje: 'Turno no encontrado' });
-    return res.json({ mensaje: 'Transferencia aprobada', turno: mapTurnoRow(rows[0]) });
+
+    const turnoRow = rows[0];
+    const payload = mapTurnoRow(turnoRow);
+    res.json({ mensaje: 'Transferencia aprobada', turno: payload });
+
+    // Enviar mail SOLO cuando se aprueba la transferencia
+    if (!shouldSendEmail(req)) return;
+
+    setImmediate(async () => {
+      try {
+        const servicioRow = await getServicioForEmail(turnoRow.servicio_id);
+        const nombreEmail = await resolveNombreParaEmailFromTurnoRow(turnoRow);
+        const serviciosArr = [
+          {
+            title: servicioRow?.nombre || '',
+            unit_price: Number(servicioRow?.precio || 0),
+          },
+        ];
+
+        const total = Number(turnoRow.monto_total || 0) || Number(servicioRow?.precio || 0) || 0;
+        const senia = Number(turnoRow.monto_pagado || 0) || 0;
+
+        await withTimeout(
+          enviarComprobanteTurno({
+            to: String(turnoRow.email || '').trim(),
+            nombre: nombreEmail,
+            servicios: serviciosArr,
+            seña: senia,
+            total,
+            pagoId: String(turnoRow.pago_id || turnoRow.id),
+            fecha: String(turnoRow.fecha),
+            hora: String(turnoRow.hora || ''),
+            restoAPagar: total - senia,
+            extras: '',
+          }),
+          60000
+        );
+
+        await pgQuery('UPDATE turnos SET email_enviado = true, updated_at = now() WHERE id = $1', [turnoRow.id]);
+      } catch (mailError) {
+        console.error('Error enviando comprobante de turno (PG, aprobarTransferencia):', mailError?.message || mailError);
+      }
+    });
+
+    return;
   } catch (error) {
     return res.status(400).json({ mensaje: error.message });
   }
@@ -207,6 +309,14 @@ export const crearTurnoTransferencia = async (req, res) => {
       return res.status(200).json(mapTurnoRow(existing[0]));
     }
 
+    let total = Number(montoTotal || 0);
+    if (!Number.isFinite(total) || total <= 0) {
+      const servicioRow = await getServicioForEmail(servicioId);
+      total = Number(servicioRow?.precio || 0);
+    }
+    const porcentajeSenia = await getPorcentajeSenia();
+    const senia = computeSenia(total, porcentajeSenia);
+
     const { rows } = await pgQuery(
       `INSERT INTO turnos (
         usuario_id,
@@ -219,6 +329,7 @@ export const crearTurnoTransferencia = async (req, res) => {
         telefono,
         comentario,
         monto_total,
+        monto_pagado,
         comprobante_path,
         estado_transferencia,
         titular_transferencia,
@@ -227,10 +338,10 @@ export const crearTurnoTransferencia = async (req, res) => {
         $1,$2,$3,$4,
         'en_proceso',
         $5,$6,$7,
-        $8,$9,
-        $10,
+        $8,$9,$10,
+        $11,
         'pendiente',
-        $11,$12
+        $12,$13
       )
       RETURNING *`,
       [
@@ -242,7 +353,8 @@ export const crearTurnoTransferencia = async (req, res) => {
         String(nombre || ''),
         String(telefono || ''),
         String(comentario || ''),
-        Number(montoTotal || 0),
+        total,
+        senia,
         comprobanteFile.filename,
         String(req.body.titularTransferencia || ''),
         String(req.body.metodoTransferencia || ''),
@@ -254,11 +366,15 @@ export const crearTurnoTransferencia = async (req, res) => {
     let turnoRowFinal = turnoRow;
     if (!turnoRowFinal.pago_id) {
       const prettyPagoId = `TRANSFERENCIA-${String(turnoRowFinal.id).padStart(3, '0')}`;
-      const { rows: updatedRows } = await pgQuery(
-        'UPDATE turnos SET pago_id = $1, updated_at = now() WHERE id = $2 RETURNING *',
-        [prettyPagoId, turnoRowFinal.id]
-      );
-      turnoRowFinal = updatedRows[0] || turnoRowFinal;
+      try {
+        const { rows: updatedRows } = await pgQuery(
+          'UPDATE turnos SET pago_id = $1, updated_at = now() WHERE id = $2 RETURNING *',
+          [prettyPagoId, turnoRowFinal.id]
+        );
+        turnoRowFinal = updatedRows[0] || turnoRowFinal;
+      } catch (e) {
+        console.warn('[turnos][PG] No se pudo setear pago_id (transferencia):', e?.message || e);
+      }
     }
 
     res.status(201).json(mapTurnoRow(turnoRowFinal));
@@ -369,7 +485,21 @@ export const crearTurno = async (req, res) => {
       return res.status(200).json(mapTurnoRow(existing[0]));
     }
 
-    const montoTotal = req.body.montoTotal != null ? Number(req.body.montoTotal) : 0;
+    let montoTotal = req.body.montoTotal != null ? Number(req.body.montoTotal) : 0;
+    if (!Number.isFinite(montoTotal) || montoTotal <= 0) {
+      const servicioRow = await getServicioForEmail(servicioId);
+      montoTotal = Number(servicioRow?.precio || 0);
+    }
+    const porcentajeSenia = await getPorcentajeSenia();
+    const senia = computeSenia(montoTotal, porcentajeSenia);
+
+    const rawPagoId = String(req.body.pagoId || '').trim();
+    const rawPagoIdUpper = rawPagoId.toUpperCase();
+    const metodoPago = String(req.body.metodoPago || '').toLowerCase().trim();
+    const requestedEstado = String(req.body.estado || '').toLowerCase().trim();
+
+    const isPresencial = rawPagoIdUpper.startsWith('PRESENCIAL') || metodoPago === 'presencial';
+    const estadoToInsert = (isPresencial && requestedEstado === 'confirmado') ? 'confirmado' : 'pendiente';
 
     const { rows } = await pgQuery(
       `INSERT INTO turnos (
@@ -382,28 +512,26 @@ export const crearTurno = async (req, res) => {
         nombre,
         telefono,
         comentario,
-        monto_total
-      ) VALUES ($1,$2,$3,$4,'pendiente',$5,$6,$7,$8,$9)
+        monto_total,
+        monto_pagado
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       RETURNING *`,
       [
         usuarioId,
         servicioId,
         fechaStr,
         horaSolicitada,
+        estadoToInsert,
         emailNorm,
         String(nombre || ''),
         String(telefono || ''),
         String(req.body.comentario || ''),
         montoTotal,
+        senia,
       ]
     );
 
     const turnoRow = rows[0];
-
-    // Si viene un pagoId de presencial (o cualquier pagoId manual), guardarlo.
-    // Para presenciales, lo normalizamos a un formato legible y correlativo.
-    const rawPagoId = String(req.body.pagoId || '').trim();
-    const rawPagoIdUpper = rawPagoId.toUpperCase();
 
     let turnoRowFinal = turnoRow;
     let pagoIdToStore = rawPagoId || null;
@@ -413,16 +541,24 @@ export const crearTurno = async (req, res) => {
     }
 
     if (pagoIdToStore) {
-      const { rows: updatedRows } = await pgQuery(
-        'UPDATE turnos SET pago_id = $1, updated_at = now() WHERE id = $2 RETURNING *',
-        [pagoIdToStore, turnoRowFinal.id]
-      );
-      turnoRowFinal = updatedRows[0] || turnoRowFinal;
+      try {
+        const { rows: updatedRows } = await pgQuery(
+          'UPDATE turnos SET pago_id = $1, updated_at = now() WHERE id = $2 RETURNING *',
+          [pagoIdToStore, turnoRowFinal.id]
+        );
+        turnoRowFinal = updatedRows[0] || turnoRowFinal;
+      } catch (e) {
+        console.warn('[turnos][PG] No se pudo setear pago_id (crearTurno):', e?.message || e);
+      }
     }
 
     res.status(201).json(mapTurnoRow(turnoRowFinal));
 
+    // Presencial creado por admin: queda confirmado y se manda comprobante al instante.
+    // Transferencia NO usa este endpoint (tiene /transferencia) y su email se manda al aprobar.
     if (!shouldSendEmail(req)) return;
+    if (estadoToInsert !== 'confirmado') return;
+    if (!turnoRowFinal?.email) return;
 
     const servicioRow = await getServicioForEmail(servicioId);
     const serviciosArr = [
@@ -439,19 +575,20 @@ export const crearTurno = async (req, res) => {
     setImmediate(async () => {
       try {
         const total = Number(turnoRowFinal.monto_total || 0) || Number(servicioRow?.precio || 0) || 0;
-        const senia = Number(turnoRowFinal.monto_pagado || 0) || 0;
+        const seniaPagada = Number(turnoRowFinal.monto_pagado || 0) || 0;
+        const nombreEmail = await resolveNombreParaEmailFromTurnoRow(turnoRowFinal);
 
         await withTimeout(
           enviarComprobanteTurno({
-            to: emailNorm,
-            nombre: String(turnoRowFinal.nombre || nombre || ''),
+            to: String(turnoRowFinal.email || '').trim(),
+            nombre: nombreEmail,
             servicios: serviciosArr,
-            seña: senia,
+            seña: seniaPagada,
             total,
             pagoId: String(turnoRowFinal.pago_id || turnoRowFinal.id),
             fecha: String(turnoRowFinal.fecha),
             hora: String(turnoRowFinal.hora || ''),
-            restoAPagar: total - senia,
+            restoAPagar: total - seniaPagada,
             extras,
           }),
           60000
@@ -459,7 +596,7 @@ export const crearTurno = async (req, res) => {
 
         await pgQuery('UPDATE turnos SET email_enviado = true, updated_at = now() WHERE id = $1', [turnoRowFinal.id]);
       } catch (mailError) {
-        console.error('Error enviando comprobante de turno (PG, no bloquea la reserva):', mailError?.message || mailError);
+        console.error('Error enviando comprobante de turno (PG, presencial):', mailError?.message || mailError);
       }
     });
 
@@ -475,7 +612,12 @@ export const crearTurno = async (req, res) => {
 
 export const obtenerTurnos = async (_req, res) => {
   try {
-    const { rows } = await pgQuery('SELECT * FROM turnos ORDER BY fecha ASC, hora ASC');
+    const { rows } = await pgQuery(
+      `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
+       FROM turnos t
+       LEFT JOIN usuarios u ON u.id = t.usuario_id
+       ORDER BY t.fecha ASC, t.hora ASC`
+    );
     return res.json(rows.map(mapTurnoRow));
   } catch (error) {
     return res.status(500).json({ mensaje: error.message });
@@ -484,7 +626,14 @@ export const obtenerTurnos = async (_req, res) => {
 
 export const obtenerTurno = async (req, res) => {
   try {
-    const { rows } = await pgQuery('SELECT * FROM turnos WHERE id = $1 LIMIT 1', [req.params.id]);
+    const { rows } = await pgQuery(
+      `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
+       FROM turnos t
+       LEFT JOIN usuarios u ON u.id = t.usuario_id
+       WHERE t.id = $1
+       LIMIT 1`,
+      [req.params.id]
+    );
     if (!rows[0]) return res.status(404).json({ mensaje: 'Turno no encontrado' });
     return res.json(mapTurnoRow(rows[0]));
   } catch (error) {
@@ -496,7 +645,11 @@ export const obtenerTurnosPorUsuario = async (req, res) => {
   try {
     const usuarioId = req.params.usuarioId;
     const { rows } = await pgQuery(
-      'SELECT * FROM turnos WHERE usuario_id = $1 ORDER BY fecha ASC, hora ASC',
+      `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
+       FROM turnos t
+       LEFT JOIN usuarios u ON u.id = t.usuario_id
+       WHERE t.usuario_id = $1
+       ORDER BY t.fecha ASC, t.hora ASC`,
       [usuarioId]
     );
     return res.json(rows.map(mapTurnoRow));

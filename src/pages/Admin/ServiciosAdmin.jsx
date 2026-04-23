@@ -57,7 +57,8 @@ const ServiciosAdmin = () => {
       resetForm();
       cargarServicios();
     } catch (error) {
-      toast.error('Error al guardar servicio');
+      const msg = error?.response?.data?.mensaje || 'Error al guardar servicio';
+      toast.error(msg);
       console.error(error);
     }
   };
@@ -89,11 +90,13 @@ const ServiciosAdmin = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await serviciosAPI.delete(id);
-      toast.success('Servicio eliminado');
+      const resp = await serviciosAPI.delete(id);
+      const msg = resp?.data?.mensaje || 'Servicio eliminado';
+      toast.success(msg);
       cargarServicios();
     } catch (error) {
-      toast.error('Error al eliminar servicio');
+      const msg = error?.response?.data?.mensaje || 'Error al eliminar servicio';
+      toast.error(msg);
     }
   };
 
@@ -109,8 +112,8 @@ const ServiciosAdmin = () => {
 
   const serviciosFiltrados = servicios
     .filter((s) =>
-      s.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      s.descripcion.toLowerCase().includes(busqueda.toLowerCase())
+      String(s?.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) ||
+      String(s?.descripcion || '').toLowerCase().includes(busqueda.toLowerCase())
     )
     .slice()
     .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));

@@ -119,6 +119,9 @@ const Dashboard = () => {
         if (!t?.fecha) return false;
         if (estadosExcluidos.has(t.estado)) return false;
 
+        // En este panel solo mostramos próximos turnos cuando ya están confirmados.
+        if (t.estado !== 'confirmado') return false;
+
         const hora = t.hora || '00:00';
         const fechaHora = new Date(`${t.fecha}T${hora}:00`);
         if (Number.isNaN(fechaHora.getTime())) {
@@ -133,6 +136,12 @@ const Dashboard = () => {
         return aDate.getTime() - bDate.getTime();
       });
   })();
+
+  const formatEstadoLabel = (estado) => {
+    const raw = String(estado || '').trim();
+    if (!raw) return '';
+    return raw.replace(/_/g, ' ').toUpperCase();
+  };
 
   const proximosTotalPages = Math.max(1, Math.ceil((proximosTurnos.length || 0) / proximosPerPage));
   const proximosTurnosPaginados = proximosTurnos.slice(
@@ -380,7 +389,15 @@ const Dashboard = () => {
                   {proximosTurnos.length > 0 ? (
                     proximosTurnosPaginados.map((t) => {
                       const servicioNombre = servicios[t.servicioId]?.nombre || 'Servicio';
-                      const clienteNombre = t.nombre || t.email || 'Sin nombre';
+                      const clienteNombre =
+                        t.nombre ||
+                        t.usuarioNombre ||
+                        t.usuario?.nombre ||
+                        t.username ||
+                        t.usuarioUsername ||
+                        t.usuario?.username ||
+                        (t.email ? String(t.email).split('@')[0] : '') ||
+                        'Sin nombre';
 
                       return (
                         <div key={t.id} className="turno-hoy-item" style={{background:'#fff'}}>
@@ -392,7 +409,7 @@ const Dashboard = () => {
                               {format(new Date(t.fecha + 'T00:00:00'), 'dd/MM')} · {t.hora || '--:--'} hs · ID pago: {getTurnoDisplayId(t)}
                             </p>
                           </div>
-                          <div className={`turno-estado ${t.estado}`}>{String(t.estado || '').toUpperCase()}</div>
+                          <div className={`turno-estado ${t.estado}`}>{formatEstadoLabel(t.estado)}</div>
                         </div>
                       );
                     })

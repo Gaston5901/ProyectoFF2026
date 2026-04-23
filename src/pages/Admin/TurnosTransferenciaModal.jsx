@@ -7,13 +7,64 @@ const TurnosTransferenciaModal = ({ onClose, onReady, onReloadDatos }) => {
   const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [serviciosById, setServiciosById] = useState({});
   const [comprobanteUrl, setComprobanteUrl] = useState(null); // visor de comprobante
   const [comprobanteLoading, setComprobanteLoading] = useState(false);
   const [accionLoadingId, setAccionLoadingId] = useState(null); // id del turno en proceso
 
+  const getClienteDisplayName = (turno) => {
+    const nombre =
+      turno?.usuario?.nombre ||
+      turno?.nombre ||
+      turno?.usuarioNombre ||
+      turno?.clienteNombre ||
+      turno?.usuarioNombre ||
+      '';
+
+    const email =
+      turno?.usuario?.email ||
+      turno?.email ||
+      turno?.clienteEmail ||
+      turno?.usuarioEmail ||
+      '';
+
+    const nombreTrim = String(nombre || '').trim();
+    if (nombreTrim) return nombreTrim;
+
+    const username =
+      turno?.usuario?.username ||
+      turno?.username ||
+      '';
+    const usernameTrim = String(username || '').trim();
+    if (usernameTrim) return usernameTrim;
+
+    const emailTrim = String(email || '').trim();
+    if (!emailTrim) return '';
+    return emailTrim.split('@')[0] || '';
+  };
+
   useEffect(() => {
     fetchTurnos();
+    fetchServicios();
   }, []);
+
+  const fetchServicios = async () => {
+    try {
+      const res = await api.get('/servicios');
+      const list = Array.isArray(res.data)
+        ? res.data
+        : (res.data && Array.isArray(res.data.servicios) ? res.data.servicios : []);
+      const map = {};
+      for (const s of list) {
+        const id = String(s?._id ?? s?.id ?? '').trim();
+        if (!id) continue;
+        map[id] = s;
+      }
+      setServiciosById(map);
+    } catch {
+      setServiciosById({});
+    }
+  };
 
   const fetchTurnos = async () => {
     setLoading(true);
@@ -152,7 +203,7 @@ const TurnosTransferenciaModal = ({ onClose, onReady, onReloadDatos }) => {
             style={{
               width: '100%',
               minWidth: 320,
-              maxWidth: 900,
+              maxWidth: 820,
               fontSize: 16,
               background: '#fff',
               borderRadius: 12,
@@ -167,7 +218,7 @@ const TurnosTransferenciaModal = ({ onClose, onReady, onReloadDatos }) => {
                 <th style={{padding:'10px 8px',fontWeight:700}}>Método</th>
                 {/* <th style={{padding:'10px 8px',fontWeight:700}}>Entidad</th> */}
                 <th style={{padding:'10px 8px',fontWeight:700}}>Fecha/Hora</th>
-                <th style={{padding:'10px 8px',fontWeight:700}}>Servicio</th>
+                <th style={{padding:'10px 8px',fontWeight:700,textAlign:'center',width:140}}>Servicio</th>
                 <th style={{padding:'10px 8px',fontWeight:700}}>Monto</th>
                 <th style={{padding:'10px 8px',fontWeight:700}}>Seña</th>
                 <th style={{padding:'10px 8px',fontWeight:700}}>Comprobante</th>
@@ -246,10 +297,23 @@ const TurnosTransferenciaModal = ({ onClose, onReady, onReloadDatos }) => {
                         ? turno.comprobanteTransferencia
                         : `${API_BASE_URL.replace(/\/api$/, '')}/uploads/comprobantes/${turno.comprobanteTransferencia}`)
                       : null;
+                    const clienteNombre = getClienteDisplayName(turno);
+                    const servicioId = String(
+                      turno?.servicioId ??
+                      turno?.servicio?._id ??
+                      turno?.servicio?.id ??
+                      turno?.servicio ??
+                      ''
+                    ).trim();
+                    const servicioNombre =
+                      turno?.servicio?.nombre ||
+                      turno?.servicioNombre ||
+                      serviciosById?.[servicioId]?.nombre ||
+                      '-';
                     return (
                     <tr key={turno._id || turno.id} style={{borderBottom:'1px solid #f8bbd0'}}>
                       <td style={{padding:'10px 8px',fontWeight:500}}>
-                        {turno.usuario?.nombre || turno.nombre || '-'}
+                        {clienteNombre || '-'}
                         {turno.titularTransferencia ? (
                           <span style={{display:'block',fontWeight:400,fontSize:13,color:'#888'}}>Titular: {turno.titularTransferencia}</span>
                         ) : null}
@@ -280,7 +344,16 @@ const TurnosTransferenciaModal = ({ onClose, onReady, onReloadDatos }) => {
                           </span>
                         ) : null}
                       </td>
-                      <td style={{padding:'10px 8px'}}>{turno.servicio?.nombre || turno.servicioNombre || '-'}</td>
+                      <td style={{
+                        padding:'8px 6px',
+                        textAlign:'center',
+                        verticalAlign:'middle',
+                        whiteSpace:'normal',
+                        wordBreak:'break-word',
+                        minWidth: 100,
+                        maxWidth: 140,
+                        lineHeight: 1.25,
+                      }}>{servicioNombre}</td>
                       <td style={{padding:'10px 8px',fontWeight:600,color:'#388e3c'}}>{turno.montoTotal ? `$${turno.montoTotal}` : '-'}</td>
                       <td style={{padding:'10px 8px',fontWeight:600,color:'#e91e63'}}>
                         {turno.montoTotal ? `$${Number.isInteger(turno.montoTotal/2) ? (turno.montoTotal/2) : (turno.montoTotal/2).toFixed(2)}` : '-'}

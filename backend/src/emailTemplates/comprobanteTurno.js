@@ -2,6 +2,7 @@
 // Plantilla de email de comprobante de turno
 module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, total, pagoId, fecha, hora, extras }) {
   const TZ = 'America/Argentina/Buenos_Aires';
+  const nombreSafe = String(nombre || '').trim() || 'cliente';
 
   const normalizeHora = (value) => {
     let h = String(value || '').trim();
@@ -70,7 +71,7 @@ module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, t
             </tr>
             <tr>
               <td style="padding: 0 24px 8px 24px;">
-                <p style="font-size: 16px; color: #333; margin: 0 0 8px 0;">Hola <b>${nombre}</b>,</p>
+                <p style="font-size: 16px; color: #333; margin: 0 0 8px 0;">Hola <b>${nombreSafe}</b>,</p>
                 <p style="font-size: 15px; color: #333; margin: 0 0 16px 0;">Te confirmamos que tu reserva fue realizada correctamente. Aquí tienes los detalles:</p>
                 <ul style="padding-left:18px; margin:0 0 10px 0;">
                   ${servicios.map(s => `<li style='margin-bottom:4px;'><b>${s.title || s.nombre}</b> - $${s.unit_price || s.precio}</li>`).join('')}
@@ -92,7 +93,7 @@ module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, t
                   <div style='background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:10px 14px;margin-bottom:8px;'>
                     <span style='font-size:15px;color:#333;'>Contraseña: <b style='color:#d13fa0;'>${extras.password}</b></span>
                   </div>
-                  <a href="https://tusitio.com/login" style="margin-top:10px;color:#fff;background:#d13fa0;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;font-size:15px;">Iniciar sesión</a>
+                  <a href="https://proyecto-ff-2026.vercel.app/login" style="margin-top:10px;color:#fff;background:#d13fa0;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;font-size:15px;">Iniciar sesión</a>
                   <div style='font-size:12px;color:#888;margin-top:6px;text-align:left;'>Puedes cambiar la contraseña luego desde tu perfil.</div>
                 </div>` : ''}
                 <p style="font-size:15px;color:#333;margin:18px 0 0 0;">Recordá llegar 5 minutos antes. ¡Te esperamos!</p>

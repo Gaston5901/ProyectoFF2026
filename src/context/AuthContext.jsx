@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usuariosAPI, turnosAPI } from '../services/api';
-import { useCarritoStore } from '../store/useCarritoStore';
+import { useCarritoStore, setCarritoStorageForUser } from '../store/useCarritoStore';
 import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
@@ -23,12 +23,23 @@ export const AuthProvider = ({ children }) => {
   const mpIntervalRef = useRef(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    (async () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        await setCarritoStorageForUser(parsed);
+      } else {
+        await setCarritoStorageForUser(null);
+      }
+      setLoading(false);
+    })();
   }, []);
+
+  // Si el usuario cambia (login/register/logout), rehidratar el carrito correcto
+  useEffect(() => {
+    setCarritoStorageForUser(user);
+  }, [user]);
 
   useEffect(() => {
     if (!user || (!user._id && !user.id)) return;
@@ -112,6 +123,7 @@ export const AuthProvider = ({ children }) => {
         const userWithToken = { ...userData.usuario, token: userData.token };
         localStorage.setItem('user', JSON.stringify(userWithToken));
         setUser(userWithToken);
+        await setCarritoStorageForUser(userWithToken);
         toast.success('¡Bienvenido/a!');
         return { success: true };
       } else {
@@ -161,6 +173,7 @@ export const AuthProvider = ({ children }) => {
       const userWithToken = { ...usuario, token };
       localStorage.setItem('user', JSON.stringify(userWithToken));
       setUser(userWithToken);
+      await setCarritoStorageForUser(userWithToken);
       toast.success('¡Registro exitoso!');
       return true;
     } catch (error) {
@@ -179,6 +192,8 @@ export const AuthProvider = ({ children }) => {
     const currentUser = JSON.parse(localStorage.getItem('user'));
     localStorage.removeItem('user');
     setUser(null);
+    // Cambiar el scope del carrito a guest para que no quede el del usuario anterior
+    setCarritoStorageForUser(null);
     const spinnerDiv = document.createElement('div');
     spinnerDiv.style.position = 'fixed';
     spinnerDiv.style.top = 0;

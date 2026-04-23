@@ -458,6 +458,11 @@
   color: var(--success);
 }
 
+.turno-estado.en_proceso {
+  background-color: #fce4ec;
+  color: var(--primary-color);
+}
+
 .turno-estado.completado {
   background-color: #e3f2fd;
   color: #2196f3;
