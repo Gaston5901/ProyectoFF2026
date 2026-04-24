@@ -321,6 +321,27 @@
   align-items: flex-start;
 }
 
+.turnos-servicio-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.turnos-servicio-meta {
+  display: none;
+}
+
+.turnos-meta-fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-light);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
 .turnos-num {
   width: 30px;
   flex: 0 0 30px;
@@ -400,6 +421,10 @@
 }
 
 @media (max-width: 700px) {
+  .turnos-section {
+    margin-top: 18px;
+  }
+
   .historial-table-frame {
     padding: 10px;
   }
@@ -451,14 +476,11 @@
   }
 
   .turnos-cell.cell-fechaHora {
-    grid-column: 1 / -1;
-    color: var(--text-light);
-    font-weight: 800;
+    display: none;
   }
 
   .turnos-cell.cell-estado {
-    grid-column: 1 / 2;
-    justify-self: start;
+    display: none;
   }
 
   .turnos-cell.cell-opciones {
@@ -475,6 +497,13 @@
     width: 36px;
     height: 36px;
     padding: 0;
+  }
+
+  .turnos-servicio-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 }
 

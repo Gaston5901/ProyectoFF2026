@@ -2,7 +2,7 @@ import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useCarrito } from '../../store/useCarritoStore';
-import { Menu, X, ShoppingCart, User, LogOut, LayoutDashboard, Calendar, TrendingUp, FileText, Image as ImageIcon } from 'lucide-react';
+import { Menu, X, ShoppingCart, User, LogOut, LayoutDashboard, Calendar, TrendingUp, FileText, Image as ImageIcon, Settings } from 'lucide-react';
 import './Navbar.css';
 import './NavbarAdmin.css';
 import BadgeTurnosEnProceso from '../Admin/BadgeTurnosEnProceso';
@@ -60,6 +60,15 @@ const Navbar = () => {
             </Link>
             <div className="navbar-admin-right">
               <span className="navbar-role-badge" aria-label={`Rol: ${roleLabel}`}>{roleLabel}</span>
+              <NavLink
+                to="/ajustes"
+                className={({ isActive }) => `navbar-link navbar-settings-link${isActive ? ' active' : ''}`}
+                aria-label="Ajustes"
+                title="Ajustes"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              >
+                <Settings size={18} />
+              </NavLink>
               {!isMobile && !isTablet && (
                 <button className="navbar-admin-logout" onClick={logout} aria-label="Cerrar sesión">
                   <LogOut size={18} />
@@ -190,6 +199,16 @@ const Navbar = () => {
                 <User size={18} />
                 <span>{user.nombre}</span>
               </div>
+              <NavLink
+                to="/ajustes"
+                className={({isActive}) => `navbar-link navbar-settings-link ${isActive ? 'active' : ''}`}
+                onClick={() => { setIsOpen(false); window.scrollTo({top:0,behavior:'smooth'}); }}
+                aria-label="Ajustes"
+                title="Ajustes"
+              >
+                <Settings size={20} />
+                <span className="navbar-settings-label">Ajustes</span>
+              </NavLink>
               <button className="navbar-link logout-btn" onClick={logout}>
                 <LogOut size={18} />
                 Salir

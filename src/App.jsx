@@ -24,6 +24,7 @@ import EditarHorariosAdmin from './pages/Admin/EditarHorariosAdmin';
 import UsuariosAdmin from './pages/Admin/UsuariosAdmin';
 import Reportes from './pages/Admin/Reportes';
 import RecuperarPassword from './pages/RecuperarPassword';
+import Ajustes from './pages/Ajustes';
 import PagoExitoso from './pages/PagoExitoso';
 import PagoFallido from './pages/PagoFallido';
 import PagoPendiente from './pages/PagoPendiente';
@@ -59,6 +60,14 @@ function AppShell() {
             <Route path="/login" element={<Login />} />
             <Route path="/recuperar" element={<RecuperarPassword />} />
             <Route path="/register" element={<Register />} />
+            <Route
+              path="/ajustes"
+              element={
+                <ProtectedRoute>
+                  <Ajustes />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/pago-exitoso" element={<PagoExitoso />} />
             <Route path="/pago-fallido" element={<PagoFallido />} />
             <Route path="/pago-pendiente" element={<PagoPendiente />} />

@@ -28,6 +28,10 @@ function mapTurnoRow(row) {
     usuarioId: String(row.usuario_id),
     servicioId: String(row.servicio_id),
 
+    // Para mostrar históricos aunque el servicio esté archivado.
+    // (El endpoint /servicios filtra por activo=true, pero turnos necesita el nombre.)
+    servicioNombre: row.servicio_nombre || row.servicioNombre || '',
+
     fecha,
     hora,
     estado: row.estado,
@@ -162,8 +166,10 @@ export const obtenerTurnosEnProceso = async (_req, res) => {
   try {
     const { rows } = await pgQuery(
       `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
+              , s.nombre AS servicio_nombre
        FROM turnos t
        LEFT JOIN usuarios u ON u.id = t.usuario_id
+       LEFT JOIN servicios s ON s.id = t.servicio_id
        WHERE t.estado = 'en_proceso'
        ORDER BY t.fecha ASC, t.hora ASC`
     );
@@ -614,8 +620,10 @@ export const obtenerTurnos = async (_req, res) => {
   try {
     const { rows } = await pgQuery(
       `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
+              , s.nombre AS servicio_nombre
        FROM turnos t
        LEFT JOIN usuarios u ON u.id = t.usuario_id
+       LEFT JOIN servicios s ON s.id = t.servicio_id
        ORDER BY t.fecha ASC, t.hora ASC`
     );
     return res.json(rows.map(mapTurnoRow));
@@ -628,8 +636,10 @@ export const obtenerTurno = async (req, res) => {
   try {
     const { rows } = await pgQuery(
       `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
+              , s.nombre AS servicio_nombre
        FROM turnos t
        LEFT JOIN usuarios u ON u.id = t.usuario_id
+       LEFT JOIN servicios s ON s.id = t.servicio_id
        WHERE t.id = $1
        LIMIT 1`,
       [req.params.id]
@@ -646,8 +656,10 @@ export const obtenerTurnosPorUsuario = async (req, res) => {
     const usuarioId = req.params.usuarioId;
     const { rows } = await pgQuery(
       `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
+              , s.nombre AS servicio_nombre
        FROM turnos t
        LEFT JOIN usuarios u ON u.id = t.usuario_id
+       LEFT JOIN servicios s ON s.id = t.servicio_id
        WHERE t.usuario_id = $1
        ORDER BY t.fecha ASC, t.hora ASC`,
       [usuarioId]

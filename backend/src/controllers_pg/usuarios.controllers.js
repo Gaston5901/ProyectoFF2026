@@ -316,3 +316,44 @@ export const resetearPassword = async (req, res) => {
     return res.status(500).json({ mensaje: 'Error al restablecer contraseña' });
   }
 };
+
+export const cambiarPassword = async (req, res) => {
+  try {
+    const userIdRaw = req.user?._id;
+    const userId = Number(userIdRaw);
+    if (!Number.isInteger(userId)) return res.status(401).json({ mensaje: 'No autenticado' });
+
+    const currentPassword = String(req.body?.currentPassword || '');
+    const newPassword = String(req.body?.newPassword || '');
+
+    if (!currentPassword) return res.status(400).json({ mensaje: 'La contraseña actual es obligatoria' });
+    if (!newPassword) return res.status(400).json({ mensaje: 'La nueva contraseña es obligatoria' });
+    if (newPassword.length < 6) return res.status(400).json({ mensaje: 'La nueva contraseña debe tener al menos 6 caracteres' });
+
+    const { rows } = await pgQuery(
+      'SELECT id, password_hash FROM usuarios WHERE id = $1 LIMIT 1',
+      [userId]
+    );
+    const row = rows?.[0];
+    if (!row) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+
+    const esValido = await bcrypt.compare(currentPassword, String(row.password_hash || ''));
+    if (!esValido) return res.status(400).json({ mensaje: 'La contraseña actual es incorrecta' });
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pgQuery(
+      `UPDATE usuarios
+       SET password_hash = $2,
+           password_reset_token_hash = NULL,
+           password_reset_expires = NULL,
+           updated_at = now()
+       WHERE id = $1`,
+      [userId, passwordHash]
+    );
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ mensaje: 'Error al cambiar contraseña' });
+  }
+};

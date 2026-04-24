@@ -236,7 +236,7 @@ function ModalTurnoDetalle({ turno, servicio, onClose, onCancelar, puedeCancelar
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
           <span style={{ fontSize: 28 }}>📋</span>
           <h2 style={{ margin: 0, color: '#d13fa0', fontSize: 20 }}>
-            {servicio?.nombre || 'Servicio'}
+            {servicio?.nombre || turno?.servicioNombre || turno?.servicio_nombre || 'Servicio'}
           </h2>
         </div>
 
@@ -371,7 +371,9 @@ const MisTurnos = () => {
     if (!q) return turnosOrdenados;
     return turnosOrdenados.filter((t) => {
       const servicio = servicios[t.servicioId] || servicios[t.servicio] || t.servicio;
-      const nombreServicio = typeof servicio === 'string' ? servicio : (servicio?.nombre || '');
+      const nombreServicio = typeof servicio === 'string'
+        ? servicio
+        : (servicio?.nombre || t?.servicioNombre || t?.servicio_nombre || '');
       const fechaTxt = String(t?.fecha || '');
       const horaTxt = String(t?.hora || '');
       const estadoTxt = String(t?.estado || '').split('_').join(' ');
@@ -495,7 +497,9 @@ const MisTurnos = () => {
 
                     {turnosPaginados.map((turno, idx) => {
                       const servicio = servicios[turno.servicioId] || servicios[turno.servicio] || turno.servicio;
-                      const nombreServicio = typeof servicio === 'string' ? servicio : (servicio?.nombre || 'Servicio');
+                      const nombreServicio = typeof servicio === 'string'
+                        ? servicio
+                        : (servicio?.nombre || turno?.servicioNombre || turno?.servicio_nombre || 'Servicio');
 
                       const { badge, badgeClass } = getEstadoBadgeInfo(turno);
 
@@ -516,7 +520,16 @@ const MisTurnos = () => {
                         <div key={turnoId} className="turnos-row" role="row">
                           <div className="turnos-cell cell-servicio" role="cell">
                             <span className="turnos-num">{rowNum}</span>
-                            <span className="turnos-servicio-nombre">{nombreServicio}</span>
+                            <div className="turnos-servicio-info">
+                              <span className="turnos-servicio-nombre">{nombreServicio}</span>
+                              <div className="turnos-servicio-meta" aria-label="Detalle del turno">
+                                <span className="turnos-meta-fecha">
+                                  <Clock size={14} />
+                                  {fechaHoraTxt}
+                                </span>
+                                <span className={badgeClass}>{badge}</span>
+                              </div>
+                            </div>
                           </div>
 
                           <div className="turnos-cell cell-fechaHora" role="cell">

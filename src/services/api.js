@@ -59,6 +59,8 @@ export const usuariosAPI = {
   delete: (id) => api.delete(`/usuarios/${id}`),
   login: (email, password) =>
     api.post('/usuarios/login', { email, password }).then(res => res.data),
+  changePassword: (currentPassword, newPassword) =>
+    api.post('/usuarios/cambiar-password', { currentPassword, newPassword }),
 };
 
 // Turnos

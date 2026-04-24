@@ -17,6 +17,7 @@ router.get("/:id", requireAuth, requireSuperAdmin, h('obtenerUsuario'));
 router.post("/login", h('login'));
 router.post("/recuperar-password", h('recuperarPassword'));
 router.post("/resetear-password", h('resetearPassword'));
+router.post("/cambiar-password", requireAuth, h('cambiarPassword'));
 
 // Registro público: siempre crea rol cliente. Superadmin puede usar este endpoint con token para crear admin/superadmin.
 router.post("/", optionalAuth, validarUsuario, (req, res, next) => {

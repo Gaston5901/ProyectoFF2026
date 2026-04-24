@@ -223,6 +223,11 @@
   border-radius: 20px;
 }
 
+/* Ajustes: en desktop solo icono, en mobile mostrar label */
+.navbar-settings-label {
+  display: none;
+}
+
 .logout-btn {
   background-color: transparent;
   border: 2px solid var(--white);
@@ -280,4 +285,8 @@
   .navbar-user,
   .logout-btn { width: 100%; justify-content: flex-start; }
   .navbar-btn { width: 100%; text-align: center; }
+
+  .navbar-settings-label {
+    display: inline;
+  }
 }
