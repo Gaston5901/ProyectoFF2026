@@ -221,6 +221,52 @@
   background-color: rgba(255, 255, 255, 0.15);
   padding: 8px 16px;
   border-radius: 20px;
+  min-width: 0;
+}
+
+.navbar-user-name {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  position: relative;
+}
+
+.navbar-user-name-text {
+  min-width: 0;
+  max-width: clamp(44px, 7vw, 92px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navbar-user-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  opacity: 0;
+  pointer-events: none;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--white), var(--primary-light));
+  color: var(--text-dark);
+  border: 1px solid var(--primary-light);
+  box-shadow: 0 10px 24px var(--shadow-md);
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  max-width: min(360px, 90vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 1200;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.navbar-user-name:hover .navbar-user-tooltip,
+.navbar-user:hover .navbar-user-tooltip,
+.navbar-user-name:focus-within .navbar-user-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* Ajustes: en desktop solo icono, en mobile mostrar label */
@@ -288,5 +334,17 @@
 
   .navbar-settings-label {
     display: inline;
+  }
+
+  /* En celular: mostrar nombre completo (sin ...), y sin tooltip */
+  .navbar-user-name-text {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .navbar-user-tooltip {
+    display: none;
   }
 }

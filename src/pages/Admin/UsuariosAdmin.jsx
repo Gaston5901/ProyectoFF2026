@@ -25,6 +25,7 @@ const ITEMS_POR_PAGINA = 10;
 const DIAS_INACTIVIDAD = 50;
 
 const USUARIOS_FILTROS = [
+  'ultimos_5',
   'todos',
   'clientes',
   'clientes_activos',
@@ -768,10 +769,12 @@ const UsuariosAdmin = () => {
 
   const [usuarios, setUsuarios] = useState([]);
   const [turnos, setTurnos] = useState([]);
+  const [turnosScope, setTurnosScope] = useState('recent');
+  const [turnosPorUsuarioId, setTurnosPorUsuarioId] = useState({});
   const [serviciosMap, setServiciosMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
-  const [filtroUsuarios, setFiltroUsuarios] = useState('todos');
+  const [filtroUsuarios, setFiltroUsuarios] = useState('ultimos_5');
   const [pagina, setPagina] = useState(1);
   const [usuarioDetalle, setUsuarioDetalle] = useState(null);
   const [adminFormOpen, setAdminFormOpen] = useState(false);
@@ -785,6 +788,50 @@ const UsuariosAdmin = () => {
   }, []);
 
   useEffect(() => {
+    // Si el usuario sale de "ULTIMOS 5", necesitamos datos completos para filtros/estado cuenta.
+    if (filtroUsuarios !== 'ultimos_5' && turnosScope !== 'all') {
+      (async () => {
+        try {
+          const tRes = await turnosAPI.getAll();
+          const turnosData = Array.isArray(tRes?.data) ? tRes.data : [];
+          setTurnos(turnosData);
+          setTurnosScope('all');
+        } catch (error) {
+          console.error('Error al cargar turnos completos:', error);
+        }
+      })();
+    }
+  }, [filtroUsuarios, turnosScope]);
+
+  useEffect(() => {
+    // Lazy load: cuando se abre el detalle, traer historial completo del usuario.
+    const id = getId(usuarioDetalle);
+    if (!id) return;
+    if (turnosPorUsuarioId[id]) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const data = await turnosAPI.getByUsuario(id);
+        if (cancelled) return;
+        const arr = Array.isArray(data) ? data : [];
+        setTurnosPorUsuarioId((prev) => ({ ...prev, [id]: arr }));
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Error al cargar turnos del usuario:', error);
+        setTurnosPorUsuarioId((prev) => ({ ...prev, [id]: [] }));
+      } finally {
+        // no-op
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [usuarioDetalle, turnosPorUsuarioId]);
+
+  useEffect(() => {
     setPagina(1);
   }, [busqueda, filtroUsuarios]);
 
@@ -793,7 +840,7 @@ const UsuariosAdmin = () => {
     try {
       const [uRes, tRes, sRes] = await Promise.all([
         usuariosAPI.getAll(),
-        turnosAPI.getAll(),
+        turnosAPI.getAll({ limit: 200 }),
         serviciosAPI.getAll(),
       ]);
 
@@ -803,6 +850,7 @@ const UsuariosAdmin = () => {
 
       const turnosData = Array.isArray(tRes?.data) ? tRes.data : [];
       setTurnos(turnosData);
+      setTurnosScope('recent');
 
       const sMap = {};
       const serviciosData = Array.isArray(sRes?.data) ? sRes.data : [];
@@ -886,6 +934,10 @@ const UsuariosAdmin = () => {
       }
 
       // Roles
+      if (filtroUsuarios === 'ultimos_5') {
+        if (esAdmin) return false;
+      }
+
       if (filtroUsuarios === 'clientes' || filtroUsuarios === 'clientes_activos' || filtroUsuarios === 'clientes_inactivos') {
         if (esAdmin) return false;
       }
@@ -899,8 +951,19 @@ const UsuariosAdmin = () => {
       if (filtroUsuarios === 'clientes_inactivos') return getEstadoCuenta(u)?.label === 'INACTIVO';
       if (filtroUsuarios === 'admins_suspendidos') return esAdminSolo && Boolean(u?.suspendido);
 
+      if (filtroUsuarios === 'ultimos_5') return true;
+
       return true;
     });
+
+    if (filtroUsuarios === 'ultimos_5') {
+      filtrados.sort((a, b) => {
+        const da = getFechaUltimaActividad(a) || new Date(0);
+        const db = getFechaUltimaActividad(b) || new Date(0);
+        return db.getTime() - da.getTime();
+      });
+      return filtrados.slice(0, 5);
+    }
 
     const rolOrder = (r) => (r === 'superadmin' ? 0 : r === 'admin' ? 1 : 2);
     filtrados.sort((a, b) => {
@@ -1341,7 +1404,7 @@ const UsuariosAdmin = () => {
         {/* Modal de detalles + historial */}
         {usuarioDetalle && (() => {
           const id = getId(usuarioDetalle);
-          const turnosUsuario = (Array.isArray(turnos) ? turnos : []).filter((t) => String(t?.usuarioId || '') === id);
+          const turnosUsuario = turnosPorUsuarioId[id] || [];
           const estadoCuenta = getEstadoCuenta(usuarioDetalle);
           return (
             <ModalUsuarioDetalle

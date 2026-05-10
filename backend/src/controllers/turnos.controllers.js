@@ -418,7 +418,17 @@ export const crearTurno = async (req, res) => {
 
 export const obtenerTurnos = async (req, res) => {
   try {
-    const turnos = await TurnosModel.find().populate("usuario servicio");
+    const limitRaw = req?.query?.limit;
+    const limitParsed = Number.parseInt(String(limitRaw ?? ''), 10);
+    const hasLimit = Number.isFinite(limitParsed) && limitParsed > 0;
+    const safeLimit = hasLimit ? Math.min(limitParsed, 200) : null;
+
+    let query = TurnosModel.find().populate("usuario servicio");
+    if (hasLimit) {
+      query = query.sort({ createdAt: -1, _id: -1 }).limit(safeLimit);
+    }
+
+    const turnos = await query;
     // Mapear a formato esperado por frontend
     const turnosMap = turnos.map(t => {
       const obj = t.toObject();

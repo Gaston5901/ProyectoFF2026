@@ -6,6 +6,7 @@ import './Admin.css';
 
 const formatEstadoLabel = (value) => String(value || '').split('_').join(' ').toUpperCase();
 const HISTORIAL_ESTADOS = [
+  'ultimos_5',
   'todos',
   'en_proceso',
   'confirmado',
@@ -205,7 +206,7 @@ const Historial = () => {
   const [usuarios, setUsuarios] = useState({});
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [filtroEstado, setFiltroEstado] = useState('ultimos_5');
   const [modalTurnoId, setModalTurnoId] = useState(null);
   const [pagina, setPagina] = useState(1);
   const itemsPorPagina = 6;
@@ -213,16 +214,18 @@ const Historial = () => {
 
   useEffect(() => {
     cargarDatos();
-  }, []);
+  }, [filtroEstado]);
 
   useEffect(() => {
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   const cargarDatos = async () => {
+    setLoading(true);
     try {
+      const limit = filtroEstado === 'ultimos_5' ? 5 : undefined;
       const [t, s] = await Promise.all([
-        turnosAPI.getAll(),
+        turnosAPI.getAll(limit ? { limit } : undefined),
         serviciosAPI.getAll(),
       ]);
 
@@ -239,8 +242,10 @@ const Historial = () => {
     }
   };
 
-  const turnosFiltrados = turnos.filter(t => {
-    const estadoOk = filtroEstado === 'todos' || t.estado === filtroEstado;
+  const turnosFuente = filtroEstado === 'ultimos_5' ? turnos.slice(0, 5) : turnos;
+
+  const turnosFiltrados = turnosFuente.filter(t => {
+    const estadoOk = filtroEstado === 'todos' || filtroEstado === 'ultimos_5' || t.estado === filtroEstado;
     const b = busqueda.toLowerCase();
     const pagoIdStr = String(t.pagoId || t.id || '').toLowerCase();
     const buscaOk =
@@ -306,7 +311,7 @@ const Historial = () => {
               >
                 {HISTORIAL_ESTADOS.map((estado) => (
                   <option key={estado} value={estado}>
-                    {formatEstadoLabel(estado)}
+                    {estado === 'ultimos_5' ? 'ÚLTIMOS 5' : formatEstadoLabel(estado)}
                   </option>
                 ))}
               </select>

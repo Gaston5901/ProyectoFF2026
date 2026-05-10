@@ -65,7 +65,7 @@ export const usuariosAPI = {
 
 // Turnos
 export const turnosAPI = {
-  getAll: () => api.get('/turnos'),
+  getAll: (params) => (params ? api.get('/turnos', { params }) : api.get('/turnos')),
   getById: (id) => api.get(`/turnos/${id}`),
   create: (data) => api.post('/turnos', data),
   update: (id, data) => api.put(`/turnos/${id}`, data),

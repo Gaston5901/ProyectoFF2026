@@ -42,7 +42,7 @@ Node.js 16+ y npm
 ## 🔧 Instalación Rápida
 ```bash
 npm install
-cd server
+cd backend
 npm install
 cd ..
 ```
@@ -100,7 +100,7 @@ server/
 db.json (JSON Server)
 ```
 
-## 🎨 Servicios Actuales
+## 🎨 Servicios Actuales 
 1. Esmaltado Semipermanente – $8.000 (60 min)
 2. Refuerzo / Capping – $10.000 (75 min)
 3. Soft Gel Manos – $9.000 (80 min)

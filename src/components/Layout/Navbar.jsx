@@ -54,21 +54,13 @@ const Navbar = () => {
           <div className="navbar-container">
             <Link to="/admin/panel" className="navbar-logo" style={{display: 'flex', alignItems: 'center', height: '54px'}}>
               <div style={{height: '44px', width: '44px', overflow: 'hidden', borderRadius: '50%', background: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(233,30,99,0.15)'}}>
-                <img src="/image copy 3.png" alt="Logo Nav" style={{height: '1000%', width: '1000%', objectFit: 'contain', borderRadius: '50%', filter: 'invert(1) drop-shadow(0 0 4px #fff) brightness(4.2)'}} />
+                <img src="/logoNav.png" alt="Logo Nav" style={{height: '1000%', width: '1000%', objectFit: 'contain', borderRadius: '50%', filter: 'invert(1) drop-shadow(0 0 4px #fff) brightness(4.2)'}} />
               </div>
               <span className="logo-text" style={{marginLeft: '10px'}}>Delfina Nails Studio</span>
             </Link>
             <div className="navbar-admin-right">
               <span className="navbar-role-badge" aria-label={`Rol: ${roleLabel}`}>{roleLabel}</span>
-              <NavLink
-                to="/ajustes"
-                className={({ isActive }) => `navbar-link navbar-settings-link${isActive ? ' active' : ''}`}
-                aria-label="Ajustes"
-                title="Ajustes"
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              >
-                <Settings size={18} />
-              </NavLink>
+            
               {!isMobile && !isTablet && (
                 <button className="navbar-admin-logout" onClick={logout} aria-label="Cerrar sesión">
                   <LogOut size={18} />
@@ -164,16 +156,18 @@ const Navbar = () => {
       <div className="navbar-container">
         <Link to="/" className="navbar-logo" style={{display: 'flex', alignItems: 'center', height: '54px'}}>
           <div style={{height: '44px', width: '44px', overflow: 'hidden', borderRadius: '50%', background: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(233,30,99,0.15)'}}>
-            <img src="/image copy 3.png" alt="Logo Nav" style={{height: '1000%', width: '1000%', objectFit: 'contain', borderRadius: '50%', filter: 'invert(1) drop-shadow(0 0 4px #fff) brightness(4.2)'}} />
+            <img src="/logoNav.png" alt="Logo Nav" style={{height: '1000%', width: '1000%', objectFit: 'contain', borderRadius: '50%', filter: 'invert(1) drop-shadow(0 0 4px #fff) brightness(4.2)'}} />
           </div>
           <span className="logo-text" style={{marginLeft: '10px'}}>Delfina Nails Studio</span>
         </Link>
         <div className={`navbar-menu ${isOpen ? 'active' : ''}`}>
           {(!user || !isAdmin()) && (
             <>
-              <NavLink end to="/" className={({isActive}) => `navbar-link ${isActive ? 'active' : ''}`} onClick={() => { setIsOpen(false); window.scrollTo({top:0,behavior:'smooth'}); }}>
-                Inicio
-              </NavLink>
+              {!user && (
+                <NavLink end to="/" className={({isActive}) => `navbar-link ${isActive ? 'active' : ''}`} onClick={() => { setIsOpen(false); window.scrollTo({top:0,behavior:'smooth'}); }}>
+                  Inicio
+                </NavLink>
+              )}
               <NavLink to="/servicios" className={({isActive}) => `navbar-link ${isActive ? 'active' : ''}`} onClick={() => { setIsOpen(false); window.scrollTo({top:0,behavior:'smooth'}); }}>
                 Servicios
               </NavLink>
@@ -197,7 +191,12 @@ const Navbar = () => {
               )}
               <div className="navbar-user">
                 <User size={18} />
-                <span>{user.nombre}</span>
+                <span className="navbar-user-name" aria-label={user.nombre}>
+                  <span className="navbar-user-name-text">{user.nombre}</span>
+                  <span className="navbar-user-tooltip" role="tooltip">
+                    {user.nombre}
+                  </span>
+                </span>
               </div>
               <NavLink
                 to="/ajustes"

@@ -616,16 +616,29 @@ export const crearTurno = async (req, res) => {
   }
 };
 
-export const obtenerTurnos = async (_req, res) => {
+export const obtenerTurnos = async (req, res) => {
   try {
-    const { rows } = await pgQuery(
+    const limitRaw = req?.query?.limit;
+    const limitParsed = Number.parseInt(String(limitRaw ?? ''), 10);
+    const hasLimit = Number.isFinite(limitParsed) && limitParsed > 0;
+    const safeLimit = hasLimit ? Math.min(limitParsed, 200) : null;
+
+    const sqlBase =
       `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
               , s.nombre AS servicio_nombre
        FROM turnos t
        LEFT JOIN usuarios u ON u.id = t.usuario_id
-       LEFT JOIN servicios s ON s.id = t.servicio_id
-       ORDER BY t.fecha ASC, t.hora ASC`
-    );
+       LEFT JOIN servicios s ON s.id = t.servicio_id`;
+
+    const sql = hasLimit
+      ? `${sqlBase}
+         ORDER BY t.created_at DESC, t.id DESC
+         LIMIT $1`
+      : `${sqlBase}
+         ORDER BY t.fecha ASC, t.hora ASC`;
+
+    const params = hasLimit ? [safeLimit] : [];
+    const { rows } = await pgQuery(sql, params);
     return res.json(rows.map(mapTurnoRow));
   } catch (error) {
     return res.status(500).json({ mensaje: error.message });
