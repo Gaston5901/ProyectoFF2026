@@ -2499,6 +2499,29 @@
   }
 }
 
+@media (max-width: 600px) {
+  .historial-table .turnos-row {
+    grid-template-columns:
+      minmax(180px, 1.8fr)
+      minmax(100px, 0.9fr)
+      120px
+      90px
+      auto;
+    gap: 6px;
+  }
+
+  .historial-table .turnos-cell.cell-opciones {
+    padding: 0;
+    margin: 0;
+    justify-content: flex-start;
+  }
+
+  .turnos-editar-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 @media (max-width: 900px) {
   .historial-table-usuario .turnos-row {
     grid-template-columns:
