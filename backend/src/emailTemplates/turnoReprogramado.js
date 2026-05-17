@@ -53,7 +53,7 @@ module.exports = function turnoReprogramadoTemplate({
     const d = toDate(fecha);
     if (d) {
       return new Intl.DateTimeFormat('es-AR', {
-        timeZone: TZ,
+        timeZone: 'UTC',
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',

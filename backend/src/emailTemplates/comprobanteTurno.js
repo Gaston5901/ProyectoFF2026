@@ -24,7 +24,7 @@ module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, t
     if (value instanceof Date) {
       if (Number.isNaN(value.getTime())) return '';
       return new Intl.DateTimeFormat('es-AR', {
-        timeZone: TZ,
+        timeZone: 'UTC',
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -45,7 +45,7 @@ module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, t
     const d = new Date(raw);
     if (!Number.isNaN(d.getTime())) {
       return new Intl.DateTimeFormat('es-AR', {
-        timeZone: TZ,
+        timeZone: 'UTC',
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',

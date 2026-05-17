@@ -13,6 +13,21 @@ function normalizeHora(value) {
   return hora;
 }
 
+function formatFechaEmail(value) {
+  if (!value) return '';
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '';
+    return value.toISOString().slice(0, 10);
+  }
+  const raw = String(value).trim();
+  if (!raw) return '';
+  const isoMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoMatch) return isoMatch[1];
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return raw;
+  return parsed.toISOString().slice(0, 10);
+}
+
 function mapTurnoRow(row) {
   if (!row) return row;
 
@@ -227,7 +242,7 @@ export const aprobarTransferencia = async (req, res) => {
             seña: senia,
             total,
             pagoId: String(turnoRow.pago_id || turnoRow.id),
-            fecha: String(turnoRow.fecha),
+            fecha: formatFechaEmail(turnoRow.fecha),
             hora: String(turnoRow.hora || ''),
             restoAPagar: total - senia,
             extras: '',
@@ -412,7 +427,7 @@ export const crearTurnoTransferencia = async (req, res) => {
             seña: senia,
             total,
             pagoId: String(turnoRowFinal.pago_id || turnoRowFinal.id),
-            fecha: String(turnoRowFinal.fecha),
+            fecha: formatFechaEmail(turnoRowFinal.fecha),
             hora: String(turnoRowFinal.hora || ''),
             restoAPagar: total - senia,
             extras,
@@ -592,7 +607,7 @@ export const crearTurno = async (req, res) => {
             seña: seniaPagada,
             total,
             pagoId: String(turnoRowFinal.pago_id || turnoRowFinal.id),
-            fecha: String(turnoRowFinal.fecha),
+            fecha: formatFechaEmail(turnoRowFinal.fecha),
             hora: String(turnoRowFinal.hora || ''),
             restoAPagar: total - seniaPagada,
             extras,
