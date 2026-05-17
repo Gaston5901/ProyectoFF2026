@@ -1111,7 +1111,7 @@ const UsuariosAdmin = () => {
   }
 
   return (
-    <div className="admin-page">
+    <div className="admin-page usuarios-admin-page">
       <div className="admin-header">
         <h1><Users size={40} /> Gestión de Usuarios</h1>
         <p>Usuarios en tabla con estado (activo/inactivo) + historial</p>
@@ -1130,7 +1130,7 @@ const UsuariosAdmin = () => {
           </div>
 
           <button
-            className="btn btn-primary"
+            className="btn btn-primary usuarios-create-btn"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}
             onClick={abrirCrearAdmin}
           >
