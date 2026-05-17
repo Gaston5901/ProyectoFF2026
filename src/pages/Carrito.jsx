@@ -27,7 +27,6 @@ const Carrito = () => {
   const { user } = useAuth();
   const [procesando, setProcesando] = useState(false);
   const [mpReturnProcessing, setMpReturnProcessing] = useState(false);
-  const [mpCheckToken, setMpCheckToken] = useState(0);
   const mpProcesadoRef = useRef(false);
   const mpReturnTimeoutRef = useRef(null);
 
@@ -201,29 +200,10 @@ const Carrito = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status') || params.get('collection_status');
-    const approved = status === 'approved' || params.get('payment_id');
-    const mpPendiente = sessionStorage.getItem('mpPagoPendiente');
-    const esRetornoMP = Boolean(status || mpPendiente || params.get('payment_id'));
+    const paymentId = params.get('payment_id') || params.get('collection_id') || params.get('paymentId');
+    const esRetornoMP = Boolean(status || paymentId);
 
     if (!esRetornoMP) {
-      return;
-    }
-
-    if (approved) {
-      if (!mpProcesadoRef.current) {
-        mpProcesadoRef.current = true;
-        setMpReturnProcessing(true);
-        sessionStorage.removeItem('mpPagoPendiente');
-        localStorage.removeItem('mpPagoIdPendiente');
-        localStorage.removeItem('mpTurnosPendientes');
-        toast.info('Pago aprobado. Estamos confirmando tu turno...', { autoClose: 5000 });
-        vaciarCarrito();
-        setTimeout(() => {
-          navigate('/mis-turnos');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          setMpReturnProcessing(false);
-        }, 800);
-      }
       return;
     }
 
@@ -233,8 +213,47 @@ const Carrito = () => {
       localStorage.removeItem('mpTurnosPendientes');
       setMpReturnProcessing(false);
       toast.error('El pago no se completó en Mercado Pago');
+      return;
     }
-  }, [items.length, procesando]);
+
+    if (mpProcesadoRef.current) {
+      return;
+    }
+
+    mpProcesadoRef.current = true;
+    setMpReturnProcessing(true);
+
+    (async () => {
+      try {
+        const turnosPendientesRaw = localStorage.getItem('mpTurnosPendientes');
+        const turnosPendientes = turnosPendientesRaw ? JSON.parse(turnosPendientesRaw) : [];
+
+        if (!Array.isArray(turnosPendientes) || turnosPendientes.length === 0) {
+          throw new Error('No hay turnos pendientes para confirmar');
+        }
+
+        toast.info('Pago aprobado. Estamos confirmando tu turno...', { autoClose: 5000 });
+
+        for (const turnoId of turnosPendientes) {
+          await turnosAPI.aprobarTransferencia(turnoId);
+        }
+
+        sessionStorage.removeItem('mpPagoPendiente');
+        localStorage.removeItem('mpPagoIdPendiente');
+        localStorage.removeItem('mpTurnosPendientes');
+        vaciarCarrito();
+        toast.success('Pago confirmado. Turno guardado y correo enviado.');
+        navigate('/mis-turnos');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        mpProcesadoRef.current = false;
+        const mensaje = error?.response?.data?.mensaje || error?.response?.data?.error || error?.message || 'No pudimos confirmar el pago';
+        toast.error(mensaje);
+      } finally {
+        setMpReturnProcessing(false);
+      }
+    })();
+  }, [navigate, vaciarCarrito]);
 
   useEffect(() => {
     if (!mpReturnProcessing) {
@@ -260,85 +279,6 @@ const Carrito = () => {
       }
     };
   }, [mpReturnProcessing]);
-
-  useEffect(() => {
-    const triggerCheck = () => {
-      const pagoIdPendiente = localStorage.getItem('mpPagoIdPendiente');
-      const turnosPendientesRaw = localStorage.getItem('mpTurnosPendientes');
-      if (pagoIdPendiente && turnosPendientesRaw) {
-        setMpCheckToken((token) => token + 1);
-      }
-    };
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        triggerCheck();
-      }
-    };
-
-    triggerCheck();
-    window.addEventListener('focus', triggerCheck);
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      window.removeEventListener('focus', triggerCheck);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!user || (!user._id && !user.id)) return;
-    const pagoIdPendiente = localStorage.getItem('mpPagoIdPendiente');
-    const turnosPendientesRaw = localStorage.getItem('mpTurnosPendientes');
-    const turnosPendientes = turnosPendientesRaw ? JSON.parse(turnosPendientesRaw) : [];
-
-    if (!pagoIdPendiente || turnosPendientes.length === 0) {
-      setMpReturnProcessing(false);
-      return;
-    }
-
-    setMpReturnProcessing(true);
-
-    let intentos = 0;
-    const maxIntentos = 12;
-    const intervalMs = 3000;
-
-    const intervalId = setInterval(async () => {
-      intentos += 1;
-      try {
-        const turnos = await turnosAPI.getByUsuario(user._id || user.id);
-        const confirmadosIds = new Set(
-          (Array.isArray(turnos) ? turnos : [])
-            .filter((turno) => turno.estado === 'confirmado')
-            .map((turno) => String(turno.id || turno._id))
-        );
-        const confirmado = turnosPendientes.every((id) => confirmadosIds.has(String(id)));
-        if (confirmado) {
-          clearInterval(intervalId);
-          localStorage.removeItem('mpPagoIdPendiente');
-          localStorage.removeItem('mpTurnosPendientes');
-          vaciarCarrito();
-          toast.success('Pago confirmado. Turno guardado.');
-          navigate('/mis-turnos');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          setMpReturnProcessing(false);
-          return;
-        }
-      } catch (error) {
-        // Si falla, seguimos intentando hasta agotar el tiempo.
-      }
-
-      if (intentos >= maxIntentos) {
-        clearInterval(intervalId);
-        localStorage.removeItem('mpPagoIdPendiente');
-        localStorage.removeItem('mpTurnosPendientes');
-        setMpReturnProcessing(false);
-        toast.info('No pudimos confirmar el pago. Revisá Mis Turnos en unos minutos.', { autoClose: 6000 });
-      }
-    }, intervalMs);
-
-    return () => clearInterval(intervalId);
-  }, [user, navigate, vaciarCarrito, mpCheckToken]);
 
   const procesarPago = async () => {
     if (!user) { toast.error('Debes iniciar sesión para continuar'); navigate('/login'); return; }
