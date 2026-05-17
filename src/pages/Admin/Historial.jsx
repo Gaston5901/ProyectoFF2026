@@ -217,6 +217,19 @@ const Historial = () => {
 
   useEffect(() => {
     if (modalTurnoId) {
+      const isMobile = window.matchMedia('(max-width: 900px)').matches;
+
+      if (isMobile) {
+        const prevOverflow = document.body.style.overflow;
+        document.body.dataset.modalPrevOverflow = prevOverflow;
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+          document.body.style.overflow = document.body.dataset.modalPrevOverflow || '';
+          delete document.body.dataset.modalPrevOverflow;
+        };
+      }
+
       const scrollY = window.scrollY || window.pageYOffset || 0;
       document.body.dataset.modalScrollY = String(scrollY);
       document.body.style.position = 'fixed';
