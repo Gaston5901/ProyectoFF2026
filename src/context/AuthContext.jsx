@@ -165,7 +165,19 @@ export const AuthProvider = ({ children }) => {
       const payload = response?.data;
       const usuario = payload?.usuario || payload;
       const token = payload?.token;
-      if (!usuario || !token) {
+      if (!usuario) {
+        toast.error('Registro fallido: datos incompletos');
+        return false;
+      }
+
+      if (!token) {
+        // Caso: backend devolvió usuario existente sin token (p.ej. respuesta "Usuario ya registrado").
+        // Bloquear registro y mostrar mensaje claro al usuario indicando que el email ya existe.
+        if (payload?.mensaje && String(payload.mensaje).toLowerCase().includes('usuario ya registrado')) {
+          toast.error('El email ya existe. Iniciá sesión o recuperá la contraseña.');
+          return false;
+        }
+
         toast.error('Registro incompleto: falta token del servidor');
         return false;
       }
