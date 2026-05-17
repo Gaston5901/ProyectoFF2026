@@ -519,8 +519,13 @@ export const crearTurno = async (req, res) => {
     const metodoPago = String(req.body.metodoPago || '').toLowerCase().trim();
     const requestedEstado = String(req.body.estado || '').toLowerCase().trim();
 
+    // Determinar estado final:
+    // - Si es presencial confirmado: confirmado
+    // - Si es Mercado Pago (confirmado): confirmado (frontend ya validó el pago)
+    // - Si no: pendiente
     const isPresencial = rawPagoIdUpper.startsWith('PRESENCIAL') || metodoPago === 'presencial';
-    const estadoToInsert = (isPresencial && requestedEstado === 'confirmado') ? 'confirmado' : 'pendiente';
+    const isMercadoPago = metodoPago === 'mercadopago' && requestedEstado === 'confirmado';
+    const estadoToInsert = (isPresencial || isMercadoPago) && requestedEstado === 'confirmado' ? 'confirmado' : 'pendiente';
 
     const { rows } = await pgQuery(
       `INSERT INTO turnos (

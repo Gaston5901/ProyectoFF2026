@@ -140,6 +140,8 @@ const Carrito = () => {
         pagoId: pagoIdGlobal,
         montoPagado: item.servicio.precio / 2,
         montoTotal: item.servicio.precio,
+        metodoPago: 'mercadopago', // Indicar que es pago confirmado de Mercado Pago
+        enviarEmail: true, // Forzar que se envíe email
         createdAt: new Date().toISOString(),
       }));
 
