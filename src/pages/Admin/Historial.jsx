@@ -220,14 +220,8 @@ const Historial = () => {
       const isMobile = window.matchMedia('(max-width: 900px)').matches;
 
       if (isMobile) {
-        const prevOverflow = document.body.style.overflow;
-        document.body.dataset.modalPrevOverflow = prevOverflow;
-        document.body.style.overflow = 'hidden';
-
-        return () => {
-          document.body.style.overflow = document.body.dataset.modalPrevOverflow || '';
-          delete document.body.dataset.modalPrevOverflow;
-        };
+        // En mobile no bloqueamos scroll del body para evitar reflow del navbar.
+        return undefined;
       }
 
       const scrollY = window.scrollY || window.pageYOffset || 0;
