@@ -86,8 +86,13 @@ function ModalTurnoDetalle({ turno, usuario, servicio, onClose }) {
 
     estadoLabel = formatEstadoLabel(estadoLabel);
   useEffect(() => {
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = 'hidden';
-    return () => (document.body.style.overflow = '');
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    };
   }, []);
 
   const cerrarOverlay = (e) => {
