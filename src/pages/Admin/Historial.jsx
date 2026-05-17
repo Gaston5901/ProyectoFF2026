@@ -85,16 +85,6 @@ function ModalTurnoDetalle({ turno, usuario, servicio, onClose }) {
     }
 
     estadoLabel = formatEstadoLabel(estadoLabel);
-  useEffect(() => {
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = 'hidden';
-    document.body.style.paddingRight = `${scrollbarWidth}px`;
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-    };
-  }, []);
-
   const cerrarOverlay = (e) => {
     if (e.target.classList.contains('modal-turno-overlay')) {
       onClose();
@@ -224,6 +214,18 @@ const Historial = () => {
   useEffect(() => {
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
+
+  useEffect(() => {
+    if (modalTurnoId) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+      return () => {
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+      };
+    }
+  }, [modalTurnoId]);
 
   const cargarDatos = async () => {
     setLoading(true);
