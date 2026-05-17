@@ -120,61 +120,31 @@ const Carrito = () => {
     ]);
 
   // Botón para pagar con Mercado Pago
+  // NOTA: NO crear turnos aquí. Esperar confirmación de Mercado Pago primero.
   const pagarConMercadoPago = async () => {
     if (!user) { toast.error('Debes iniciar sesión para continuar'); navigate('/login'); return; }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setProcesando(true);
     try {
       const pagoIdGlobal = 'MP' + Date.now() + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('mpPagoIdPendiente', pagoIdGlobal);
-
-      const turnosData = items.map((item) => ({
+      
+      // Guardar el carrito y datos del usuario para crear turnos después del pago aprobado
+      const carritoParaPago = items.map((item) => ({
         email: user.email,
         nombre: user.nombre,
         telefono: user.telefono || '',
         servicio: item.servicio.id,
         fecha: item.fecha,
         hora: item.hora,
-        estado: 'pendiente',
+        estado: 'confirmado', // Estado final después de pago aprobado
         pagoId: pagoIdGlobal,
         montoPagado: item.servicio.precio / 2,
         montoTotal: item.servicio.precio,
-        enviarEmail: false,
         createdAt: new Date().toISOString(),
       }));
 
-      const resultadosTurnos = await Promise.allSettled(
-        turnosData.map((turno) =>
-          withTimeout(turnosAPI.create(turno), 45000, 'Creación de turno')
-        )
-      );
-
-      const turnosIds = [];
-      const fallidos = [];
-
-      resultadosTurnos.forEach((resultado, index) => {
-        if (resultado.status === 'fulfilled') {
-          const creado = resultado.value?.data || {};
-          const id = creado.id || creado._id;
-          if (id) {
-            turnosIds.push(id);
-            return;
-          }
-          fallidos.push({ item: items[index], mensaje: 'Respuesta inválida del servidor' });
-          return;
-        }
-
-        const err = resultado.reason;
-        const mensaje = err?.response?.data?.mensaje || err?.message || 'Error desconocido';
-        fallidos.push({ item: items[index], mensaje });
-      });
-
-      if (fallidos.length > 0) {
-        toast.error(fallidos[0].mensaje || 'No se pudo preparar el pago');
-        return;
-      }
-
-      localStorage.setItem('mpTurnosPendientes', JSON.stringify(turnosIds));
+      localStorage.setItem('mpPagoIdPendiente', pagoIdGlobal);
+      localStorage.setItem('mpCarritoPendiente', JSON.stringify(carritoParaPago));
 
       const carritoMP = items.map(item => ({
         titulo: item.servicio.nombre,
@@ -182,15 +152,19 @@ const Carrito = () => {
         cantidad: 1
       }));
 
-      const metadata = { turnosIds, pagoId: pagoIdGlobal };
+      const metadata = { pagoId: pagoIdGlobal };
       const data = await crearPreferencia(carritoMP, metadata);
       if (data.init_point) {
         sessionStorage.setItem('mpPagoPendiente', '1');
         window.location.href = data.init_point;
       } else {
+        localStorage.removeItem('mpPagoIdPendiente');
+        localStorage.removeItem('mpCarritoPendiente');
         toast.error('No se pudo iniciar el pago');
       }
     } catch (e) {
+      localStorage.removeItem('mpPagoIdPendiente');
+      localStorage.removeItem('mpCarritoPendiente');
       toast.error('Error al conectar con Mercado Pago');
     } finally {
       setProcesando(false);
@@ -207,12 +181,16 @@ const Carrito = () => {
       return;
     }
 
+    // Si el pago NO fue aprobado, limpiar todo y volver al carrito
     if (status && status !== 'approved') {
       sessionStorage.removeItem('mpPagoPendiente');
       localStorage.removeItem('mpPagoIdPendiente');
-      localStorage.removeItem('mpTurnosPendientes');
+      localStorage.removeItem('mpCarritoPendiente');
       setMpReturnProcessing(false);
-      toast.error('El pago no se completó en Mercado Pago');
+      // Mostrar alerta pero permitir que el carrito se mantenga intacto
+      toast.info('Pago cancelado. Tu carrito se mantiene guardado.', { autoClose: 5000 });
+      // Limpiar parámetros de URL sin recargar
+      window.history.replaceState({}, document.title, window.location.pathname);
       return;
     }
 
@@ -225,22 +203,42 @@ const Carrito = () => {
 
     (async () => {
       try {
-        const turnosPendientesRaw = localStorage.getItem('mpTurnosPendientes');
-        const turnosPendientes = turnosPendientesRaw ? JSON.parse(turnosPendientesRaw) : [];
+        const carritoParaPagoRaw = localStorage.getItem('mpCarritoPendiente');
+        const carritoParaPago = carritoParaPagoRaw ? JSON.parse(carritoParaPagoRaw) : [];
 
-        if (!Array.isArray(turnosPendientes) || turnosPendientes.length === 0) {
-          throw new Error('No hay turnos pendientes para confirmar');
+        if (!Array.isArray(carritoParaPago) || carritoParaPago.length === 0) {
+          throw new Error('No hay turnos para crear');
         }
 
-        toast.info('Pago aprobado. Estamos confirmando tu turno...', { autoClose: 5000 });
+        toast.info('Pago aprobado. Estamos creando tus turnos...', { autoClose: 5000 });
 
-        for (const turnoId of turnosPendientes) {
-          await turnosAPI.aprobarTransferencia(turnoId);
+        // Crear todos los turnos con estado "confirmado" AHORA que el pago fue aprobado
+        const resultados = await Promise.allSettled(
+          carritoParaPago.map((turnoData) =>
+            withTimeout(turnosAPI.create(turnoData), 45000, 'Creación de turno')
+          )
+        );
+
+        const creados = [];
+        const fallidos = [];
+
+        resultados.forEach((resultado, index) => {
+          if (resultado.status === 'fulfilled') {
+            creados.push(resultado.value?.data || {});
+          } else {
+            const err = resultado.reason;
+            const mensaje = err?.response?.data?.mensaje || err?.message || 'Error desconocido';
+            fallidos.push({ index, mensaje });
+          }
+        });
+
+        if (fallidos.length > 0 && creados.length === 0) {
+          throw new Error(fallidos[0]?.mensaje || 'No se pudieron crear los turnos');
         }
 
         sessionStorage.removeItem('mpPagoPendiente');
         localStorage.removeItem('mpPagoIdPendiente');
-        localStorage.removeItem('mpTurnosPendientes');
+        localStorage.removeItem('mpCarritoPendiente');
         vaciarCarrito();
         toast.success('Pago confirmado. Turno guardado y correo enviado.');
         navigate('/mis-turnos');
