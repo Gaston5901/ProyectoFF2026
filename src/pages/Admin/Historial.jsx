@@ -217,12 +217,24 @@ const Historial = () => {
 
   useEffect(() => {
     if (modalTurnoId) {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      document.documentElement.style.overflow = 'hidden';
-      document.documentElement.style.paddingRight = `${scrollbarWidth}px`;
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      document.body.dataset.modalScrollY = String(scrollY);
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
       return () => {
-        document.documentElement.style.overflow = '';
-        document.documentElement.style.paddingRight = '';
+        const savedY = Number(document.body.dataset.modalScrollY || '0');
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        delete document.body.dataset.modalScrollY;
+        window.scrollTo(0, savedY);
       };
     }
   }, [modalTurnoId]);
