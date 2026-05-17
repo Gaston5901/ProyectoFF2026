@@ -71,6 +71,7 @@ export const turnosAPI = {
   update: (id, data) => api.put(`/turnos/${id}`, data),
   delete: (id) => api.delete(`/turnos/${id}`),
   confirm: async (id) => api.patch(`/turnos/${id}`, { estado: 'confirmado' }),
+  aprobarTransferencia: (id) => api.patch(`/turnos/${id}/aprobar-transferencia`, {}),
   getByUsuario: async (usuarioId) => {
     const response = await api.get(`/turnos/usuario/${usuarioId}`);
     return response.data;

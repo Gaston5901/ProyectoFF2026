@@ -48,6 +48,9 @@ const getEstadoBadgeInfo = (turno) => {
         badgeClass += ' expirado';
         break;
       case 'completado':
+        badge = 'CONFIRMADO';
+        badgeClass += ' confirmado';
+        break;
       default:
         badge = 'COMPLETADO';
         badgeClass += ' completado';
