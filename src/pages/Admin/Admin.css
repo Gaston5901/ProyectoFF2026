@@ -1344,6 +1344,16 @@
   display: block;
 }
 
+.turnos-id.turnos-id-tap {
+  cursor: pointer;
+}
+
+.turnos-id.turnos-id-tap:focus-visible {
+  outline: 2px solid rgba(25, 118, 210, 0.45);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 .turnos-tooltip-wrap {
   position: relative;
   display: block;
@@ -2677,6 +2687,25 @@
 
   .usuarios-table .turnos-cell.cell-ultimo {
     font-size: 11px;
+  }
+
+  .historial-table-usuario .turnos-cell.cell-cliente .turnos-id.turnos-id-tap {
+    max-width: 92px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.16s ease;
+  }
+
+  .historial-table-usuario .turnos-cell.cell-cliente .turnos-id.turnos-id-tap.is-open {
+    max-width: none;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: initial;
+    background: rgba(25, 118, 210, 0.1);
+    border: 1px solid rgba(25, 118, 210, 0.28);
+    border-radius: 8px;
+    padding: 2px 6px;
   }
 
   .usuarios-table .turnos-cell .turnos-estado-badge {

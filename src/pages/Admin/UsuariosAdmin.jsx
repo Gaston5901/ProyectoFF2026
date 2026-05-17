@@ -121,6 +121,7 @@ const getTurnoEstadoUI = (turno) => {
 function ModalUsuarioDetalle({ usuario, turnosUsuario, serviciosMap, estadoCuenta, onClose }) {
   const [paginaTurnos, setPaginaTurnos] = useState(1);
   const [filtroHistorial, setFiltroHistorial] = useState('todos');
+  const [expandedPagoRowKey, setExpandedPagoRowKey] = useState(null);
   const itemsPorPagina = 6;
 
   useEffect(() => {
@@ -136,10 +137,12 @@ function ModalUsuarioDetalle({ usuario, turnosUsuario, serviciosMap, estadoCuent
 
   useEffect(() => {
     setPaginaTurnos(1);
+    setExpandedPagoRowKey(null);
   }, [usuario?.id, usuario?._id]);
 
   useEffect(() => {
     setPaginaTurnos(1);
+    setExpandedPagoRowKey(null);
   }, [filtroHistorial]);
 
   const cerrarOverlay = (e) => {
@@ -576,8 +579,13 @@ function ModalUsuarioDetalle({ usuario, turnosUsuario, serviciosMap, estadoCuent
                       ? total
                       : (typeof pagadoDb === 'number' ? pagadoDb : null);
 
+                  const rowKey = getId(turno) || `${idx}`;
+                  const pagadoLabel = pagadoEfectivo != null
+                    ? `Pagado: $${Number(pagadoEfectivo).toLocaleString()}`
+                    : '';
+
                   return (
-                    <div key={getId(turno) || `${idx}`} className="turnos-row" role="row">
+                    <div key={rowKey} className="turnos-row" role="row">
                       <div className="turnos-cell cell-servicio" role="cell">
                         <span className="turnos-num">{rowNum}</span>
                         <span className="turnos-servicio-nombre">{servicio?.nombre || 'Servicio'}</span>
@@ -623,10 +631,21 @@ function ModalUsuarioDetalle({ usuario, turnosUsuario, serviciosMap, estadoCuent
                         <span style={{ fontWeight: 900, color: '#388e3c' }}>
                           {total != null ? `$${Number(total).toLocaleString()}` : '-'}
                         </span>
-                        <span className="turnos-id" style={{ color: '#1976d2' }}>
-                          {pagadoEfectivo != null
-                            ? `Pagado: $${Number(pagadoEfectivo).toLocaleString()}`
-                            : ''}
+                        <span
+                          className={`turnos-id turnos-id-tap ${expandedPagoRowKey === rowKey ? 'is-open' : ''}`}
+                          style={{ color: '#1976d2' }}
+                          onClick={() => setExpandedPagoRowKey((prev) => (prev === rowKey ? null : rowKey))}
+                          role="button"
+                          tabIndex={0}
+                          title={pagadoLabel}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setExpandedPagoRowKey((prev) => (prev === rowKey ? null : rowKey));
+                            }
+                          }}
+                        >
+                          {pagadoLabel}
                         </span>
                       </div>
 
