@@ -22,6 +22,16 @@ const ModalTransferencia = ({ open, onClose }) => {
     }}>
       <style>{`
         .transferencia-modal-card { width: min(94vw, 440px); }
+        @media (max-width: 600px) {
+          .transferencia-modal-overlay { padding: 8px; }
+          .transferencia-modal-card {
+            width: calc(100vw - 16px);
+            max-width: calc(100vw - 16px);
+            padding: 16px 12px 14px 12px;
+            border-radius: 18px;
+            max-height: calc(100vh - 16px);
+          }
+        }
         @media (min-width: 900px) {
           .transferencia-modal-card { width: min(92vw, 720px); max-width: 720px; }
         }

@@ -307,7 +307,7 @@ export const crearTurnoTransferencia = async (req, res) => {
       return res.status(409).json({ mensaje: `El horario ${horaSolicitada} no está disponible para ese día.` });
     }
 
-    const { usuarioId, usuarioCreadoAhora, passwordGenerada } = await findOrCreateUsuarioByEmail({
+    const { usuarioId } = await findOrCreateUsuarioByEmail({
       emailNorm,
       nombre,
       telefono,
@@ -400,47 +400,7 @@ export const crearTurnoTransferencia = async (req, res) => {
 
     res.status(201).json(mapTurnoRow(turnoRowFinal));
 
-    if (!shouldSendEmail(req)) return;
-
-    const servicioRow = await getServicioForEmail(servicioId);
-    const serviciosArr = [
-      {
-        title: servicioRow?.nombre || '',
-        unit_price: Number(servicioRow?.precio || 0),
-      },
-    ];
-
-    const extras = usuarioCreadoAhora && passwordGenerada
-      ? { usuario: emailNorm, password: passwordGenerada }
-      : '';
-
-    setImmediate(async () => {
-      try {
-        const total = Number(turnoRowFinal.monto_total || 0) || Number(servicioRow?.precio || 0) || 0;
-        const senia = Number(turnoRowFinal.monto_pagado || 0) || 0;
-
-        await withTimeout(
-          enviarComprobanteTurno({
-            to: emailNorm,
-            nombre: String(turnoRowFinal.nombre || nombre || ''),
-            servicios: serviciosArr,
-            seña: senia,
-            total,
-            pagoId: String(turnoRowFinal.pago_id || turnoRowFinal.id),
-            fecha: formatFechaEmail(turnoRowFinal.fecha),
-            hora: String(turnoRowFinal.hora || ''),
-            restoAPagar: total - senia,
-            extras,
-          }),
-          60000
-        );
-
-        await pgQuery('UPDATE turnos SET email_enviado = true, updated_at = now() WHERE id = $1', [turnoRowFinal.id]);
-      } catch (mailError) {
-        console.error('Error enviando comprobante de turno (PG, no bloquea la reserva):', mailError?.message || mailError);
-      }
-    });
-
+    // Para transferencias, el comprobante se envía solo al aprobar por admin/superadmin.
     return;
   } catch (error) {
     return res.status(400).json({ mensaje: error.message });

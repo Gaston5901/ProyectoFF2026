@@ -18,6 +18,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     document.body.classList.add('auth-body');
@@ -51,13 +52,19 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     const validationErrors = validate();
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
     const { confirmPassword, ...userData } = formData;
-    const success = await register(userData);
-    if (success) {
-      navigate('/mis-turnos');
+    setLoading(true);
+    try {
+      const success = await register(userData);
+      if (success) {
+        navigate('/mis-turnos');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -80,6 +87,7 @@ const Register = () => {
               placeholder="Tu nombre"
               value={formData.nombre}
               onChange={handleChange}
+              disabled={loading}
               required
             />
             {errors.nombre && <div className="auth-error">{errors.nombre}</div>}
@@ -94,6 +102,7 @@ const Register = () => {
               placeholder="tu@correo.com"
               value={formData.email}
               onChange={handleChange}
+              disabled={loading}
               required
             />
             {errors.email && <div className="auth-error">{errors.email}</div>}
@@ -108,6 +117,7 @@ const Register = () => {
               placeholder="+54 11 1234-5678"
               value={formData.telefono}
               onChange={handleChange}
+              disabled={loading}
               required
             />
             {errors.telefono && <div className="auth-error">{errors.telefono}</div>}
@@ -122,12 +132,14 @@ const Register = () => {
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
+              disabled={loading}
               required
               minLength={6}
             />
             <span
               style={{ position: 'absolute', right: '16px', top: '73%', transform: 'translateY(-40%)', cursor: 'pointer', background: 'transparent', padding: 0 }}
               onClick={() => setShowPassword((v) => !v)}
+              aria-disabled={loading}
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </span>
@@ -143,21 +155,32 @@ const Register = () => {
               placeholder="••••••••"
               value={formData.confirmPassword}
               onChange={handleChange}
+              disabled={loading}
               required
               minLength={6}
             />
             <span
               style={{ position: 'absolute', right: '16px', top: '74%', transform: 'translateY(-40%)', cursor: 'pointer', background: 'transparent', padding: 0 }}
               onClick={() => setShowConfirmPassword((v) => !v)}
+              aria-disabled={loading}
             >
               {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </span>
             {errors.confirmPassword && <div className="auth-error">{errors.confirmPassword}</div>}
           </div>
 
-          <button type="submit" className="btn btn-primary auth-submit">
-            <UserPlus size={20} />
-            Crear Cuenta
+          <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
+            {loading ? (
+              <>
+                <span className="btn-spinner" aria-hidden="true" />
+                Creando cuenta...
+              </>
+            ) : (
+              <>
+                <UserPlus size={20} />
+                Crear Cuenta
+              </>
+            )}
           </button>
         </form>
 

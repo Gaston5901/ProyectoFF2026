@@ -442,17 +442,14 @@ const Carrito = () => {
               <div className="carrito-pay-title">Elegí tu medio de pago</div>
               <div className="carrito-pay-actions">
                 <button className="btn btn-secondary btn-pagar" onClick={pagarConMercadoPago} disabled={procesando}>
-                  {procesando ? (
-                    <>
+                  <span className="btn-pagar-icon-slot" aria-hidden="true">
+                    {procesando ? (
                       <div className="spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>
-                      Procesando...
-                    </>
-                  ) : (
-                    <>
+                    ) : (
                       <Wallet size={20} />
-                      Mercado Pago
-                    </>
-                  )}
+                    )}
+                  </span>
+                  <span className="btn-pagar-label">Mercado Pago</span>
                 </button>
 
                 <PagarConTransferenciaBtn />

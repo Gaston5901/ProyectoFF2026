@@ -242,6 +242,63 @@ const TransferenciaForm = () => {
           gap: 10px;
           padding-top: 2px;
         }
+        @media (max-width: 600px) {
+          .transferencia-grid {
+            gap: 10px;
+          }
+          .transferencia-col-2,
+          .transferencia-grid label,
+          .transferencia-cta {
+            min-width: 0;
+            width: 100%;
+          }
+          .transferencia-grid label {
+            overflow-wrap: anywhere;
+          }
+          .transferencia-grid input {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+          }
+          .transferencia-col-2 ul {
+            width: 100%;
+            min-width: 0;
+          }
+          .transferencia-col-2 li {
+            flex-wrap: wrap;
+            align-items: flex-start;
+          }
+          .transferencia-col-2 li > span:first-child {
+            min-width: 0;
+            flex: 1 1 auto;
+          }
+          .transferencia-col-2 li button {
+            flex: 0 0 auto;
+          }
+          .transferencia-col-2 li span span {
+            max-width: 100%;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+          }
+          .transferencia-cta {
+            gap: 8px;
+          }
+          .transferencia-cta button {
+            width: 100%;
+            max-width: 100%;
+          }
+          .transferencia-file-box {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+          }
+          .transferencia-file-box > span:first-of-type {
+            min-width: 0;
+          }
+          .transferencia-col-2 strong {
+            font-size: 18px;
+          }
+        }
         @media (min-width: 900px) {
           .transferencia-grid {
             grid-template-columns: 1fr 1fr;

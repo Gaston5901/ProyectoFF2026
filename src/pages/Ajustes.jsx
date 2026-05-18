@@ -11,6 +11,7 @@ const Ajustes = () => {
   const { logout } = useAuth();
 
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [form, setForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -53,10 +54,14 @@ const Ajustes = () => {
     setLoading(true);
     try {
       await usuariosAPI.changePassword(form.currentPassword, form.newPassword);
-      toast.success('Contraseña actualizada. Iniciá sesión nuevamente.');
-      // Seguridad: luego de cambiar contraseña, forzamos re-login
-      logout();
-      navigate('/login');
+      setSuccess(true);
+      // Mostrar mensaje pequeño antes de forzar re-login
+      setTimeout(() => {
+        toast.success('Contraseña actualizada. Iniciá sesión nuevamente.');
+        // Seguridad: luego de cambiar contraseña, forzamos re-login
+        logout();
+        navigate('/login');
+      }, 1200);
     } catch (error) {
       const backendMsg = error?.response?.data?.mensaje || error?.response?.data?.error;
       toast.error(backendMsg || 'No se pudo cambiar la contraseña');
@@ -141,9 +146,17 @@ const Ajustes = () => {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
-            Guardar
-          </button>
+          <div className="auth-btn-wrapper" style={{ position: 'relative' }}>
+            <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
+              <span style={{ minWidth: 84, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {loading ? <span className="btn-spinner" aria-hidden="true"></span> : null}
+                Guardar
+              </span>
+            </button>
+            {success ? (
+              <div className="auth-success" role="status">Contraseña cambiada correctamente</div>
+            ) : null}
+          </div>
         </form>
       </div>
     </div>

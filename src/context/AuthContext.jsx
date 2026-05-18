@@ -217,6 +217,7 @@ export const AuthProvider = ({ children }) => {
     spinnerDiv.style.flexDirection = 'column';
     spinnerDiv.style.alignItems = 'center';
     spinnerDiv.style.justifyContent = 'center';
+    spinnerDiv.style.textAlign = 'center';
     spinnerDiv.style.zIndex = 9999;
     let spinnerColor = '#ffb6d5', spinnerTop = '#ad1457', title = '', subtitle = '', titleColor = '#ad1457', subColor = '#d81b60';
     if (currentUser && currentUser.rol === 'superadmin') {
@@ -233,11 +234,13 @@ export const AuthProvider = ({ children }) => {
       title = '¡Hasta luego!'; subtitle = 'Cerrando sesión...';
     }
     spinnerDiv.innerHTML = `
-      <div style="margin-bottom:24px">
-        <div class='spinner' style='width:60px;height:60px;border:6px solid ${spinnerColor};border-top:6px solid ${spinnerTop};border-radius:50%;animation:spin 1s linear infinite;'></div>
+      <div style="margin-bottom:18px">
+        <div class='spinner' style='width:56px;height:56px;border:6px solid ${spinnerColor};border-top:6px solid ${spinnerTop};border-radius:50%;animation:spin 1s linear infinite;'></div>
       </div>
-      <h2 style='color:${titleColor};font-family:Montserrat,sans-serif;font-size:2rem;margin-bottom:8px;'>${title}</h2>
-      <p style='color:${subColor};font-size:1.1rem;'>${subtitle}</p>
+      <div style="max-width:92vw;">
+        <h2 style='color:${titleColor};font-family:Montserrat,sans-serif;font-size:clamp(1.4rem,4.5vw,2rem);margin:0 0 8px;text-align:center;'>${title}</h2>
+        <p style='color:${subColor};font-size:1.05rem;margin:0;text-align:center;'>${subtitle}</p>
+      </div>
       <style>@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}</style>
     `;
     document.body.appendChild(spinnerDiv);

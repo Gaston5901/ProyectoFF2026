@@ -384,6 +384,7 @@
 
   .carrito-pay-actions > * {
     flex: 1 1 0;
+    min-width: 0;
   }
 }
 
@@ -395,6 +396,21 @@
   border-radius: 14px;
   padding: 14px 14px;
   font-weight: 800;
+  min-height: 52px;
+  white-space: nowrap;
+}
+
+.btn-pagar-icon-slot {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-pagar-label {
+  line-height: 1;
 }
 
 .btn-transferencia {
