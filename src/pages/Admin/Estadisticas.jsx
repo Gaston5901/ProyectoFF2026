@@ -71,9 +71,8 @@ const Estadisticas = () => {
   const formatMoney = (n) => `$${Number(n).toLocaleString()}`;
 
 
-  // -------------------------
+  
   // 🔹 Cargar evolución últimos 12 meses (auto-actualizable)
-  // -------------------------
   useEffect(() => {
     let mounted = true;
     let intervalId;
@@ -126,9 +125,8 @@ const Estadisticas = () => {
   }, []);
 
 
-  // -------------------------
   // 🔹 Cargar estadísticas según período (auto-actualizable)
-  // -------------------------
+  
   useEffect(() => {
     let intervalId;
     const cargarYDesmarcar = async () => {
@@ -253,9 +251,9 @@ const Estadisticas = () => {
     }
   };
 
-  // -------------------------
+  
   // 🔹 Pie chart: datos y porcentajes (filtrado por controles propios)
-  // -------------------------
+  
   useEffect(() => {
     let mounted = true;
     const fetchPieData = async () => {
@@ -501,9 +499,8 @@ const Estadisticas = () => {
   );
 };
 
-// ------------------------------------
+
 // 🔹 COMPONENTE DE TARJETA GRANDE
-// ------------------------------------
 const StatBig = ({ icon, title, value, label, color }) => {
   const colors = {
     blue: 'linear-gradient(135deg, #2196f3, #42a5f5)',
@@ -526,9 +523,9 @@ const StatBig = ({ icon, title, value, label, color }) => {
   );
 };
 
-// ------------------------------------
+
 // 🔹 COMPONENTE RANKING
-// ------------------------------------
+
 
 const medallas = [
   { icon: '🥇', color: '#ffd700' }, // oro

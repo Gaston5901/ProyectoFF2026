@@ -11,7 +11,7 @@ const h = (name) => (req, res, next) => pick()[name](req, res, next);
 router.get("/", h('obtenerConfiguracion'));
 router.patch("/", h('actualizarConfiguracion'));
 
-// Horarios por día (estructura igual a db.json)
+// Horarios por día 
 router.get("/horariosPorDia", h('obtenerHorariosPorDia'));
 router.put("/horariosPorDia", h('actualizarHorariosPorDia'));
 

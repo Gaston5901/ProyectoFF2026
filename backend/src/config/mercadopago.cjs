@@ -11,9 +11,7 @@ const client = new MercadoPagoConfig({ accessToken: accessToken || "" });
 const preference = new Preference(client);
 const payment = new Payment(client);
 
-// Wrapper de compatibilidad con API vieja que el proyecto usaba:
-// - mercadopago.preferences.create(preferenceObject) -> { body: result }
-// - mercadopago.payment.findById(id) -> { body: result }
+
 module.exports = {
 	preferences: {
 		create: async (pref) => {

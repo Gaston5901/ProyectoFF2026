@@ -86,6 +86,7 @@ const FabTurnosTransferencia = ({ onReloadDatos }) => {
           }}
           onReady={() => setModalLoading(false)}
           onReloadDatos={onReloadDatos}
+          onAction={() => setCount((c) => Math.max(0, c - 1))}
         />
       )}
     </>

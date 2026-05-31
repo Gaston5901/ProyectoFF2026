@@ -101,6 +101,22 @@ const Turnos = () => {
   const [fechaHorariosExtras, setFechaHorariosExtras] = useState('');
   const [horariosExtras, setHorariosExtras] = useState([]);
   const [nuevoHorario, setNuevoHorario] = useState('');
+
+  const validarYFormatearHora = (input) => {
+    if (!input) return null;
+    const s = String(input).trim();
+    // aceptar formatos como 5:6, 05:06, 14:30, 23.59 etc
+    const m = s.match(/^(\d{1,2})\s*[:\.\-]?\s*(\d{1,2})$/);
+    if (!m) return null;
+    let hh = Number(m[1]);
+    let mm = Number(m[2]);
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+    if (hh < 0 || hh > 23) return null;
+    if (mm < 0 || mm > 59) return null;
+    const hhS = String(hh).padStart(2, '0');
+    const mmS = String(mm).padStart(2, '0');
+    return `${hhS}:${mmS}`;
+  };
   const [editandoHorario, setEditandoHorario] = useState(null);
 
   // Cargar horarios extras para la fecha seleccionada
@@ -457,9 +473,16 @@ const Turnos = () => {
                                   ) : (
                                     <span style={{fontWeight:'bold',color:'#d13fa0',marginRight:'8px'}}>{h}</span>
                                   )}
-                                  {editandoHorario === i ? (
+                                    {editandoHorario === i ? (
                                     <>
-                                      <button style={{background:'#d13fa0',color:'#fff',border:'none',borderRadius:'6px',padding:'2px 8px',marginRight:'4px'}} onClick={() => {const arr=[...horariosExtras];arr[i]=nuevoHorario;setHorariosExtras(arr);setEditandoHorario(null);}}>Guardar</button>
+                                      <button style={{background:'#d13fa0',color:'#fff',border:'none',borderRadius:'6px',padding:'2px 8px',marginRight:'4px'}} onClick={() => {
+                                        const h = validarYFormatearHora(nuevoHorario);
+                                        if (!h) { toast.error('Horario inválido. Usá formato HH:MM.'); return; }
+                                        const arr=[...horariosExtras];
+                                        // evitar duplicados
+                                        if (arr.some((x, idx) => idx!==i && x === h)) { toast.error('Ya existe ese horario'); return; }
+                                        arr[i]=h;setHorariosExtras(arr);setEditandoHorario(null);
+                                      }}>Guardar</button>
                                       <button style={{background:'#eee',color:'#d13fa0',border:'none',borderRadius:'6px',padding:'2px 8px'}} onClick={() => setEditandoHorario(null)}>Cancelar</button>
                                     </>
                                   ) : (
@@ -474,7 +497,12 @@ const Turnos = () => {
                           </div>
                           <div style={{display:'flex',alignItems:'center',marginBottom:'18px'}}>
                             <input type="text" value={nuevoHorario} onChange={e => setNuevoHorario(e.target.value)} placeholder="Nuevo horario (ej: 18:00)" style={{padding:'4px',borderRadius:'6px',border:'1px solid #d13fa0',marginRight:'8px',width:'90px'}} />
-                            <button style={{background:'#d13fa0',color:'#fff',border:'none',borderRadius:'6px',padding:'2px 12px',fontWeight:'bold'}} onClick={() => {if(nuevoHorario){setHorariosExtras([...horariosExtras,nuevoHorario]);setNuevoHorario('');}}}>Agregar</button>
+                            <button style={{background:'#d13fa0',color:'#fff',border:'none',borderRadius:'6px',padding:'2px 12px',fontWeight:'bold'}} onClick={() => {
+                              const h = validarYFormatearHora(nuevoHorario);
+                              if (!h) { toast.error('Horario inválido. Usá formato HH:MM.'); return; }
+                              if (horariosExtras.includes(h)) { toast.error('Ese horario ya existe'); setNuevoHorario(''); return; }
+                              setHorariosExtras([...horariosExtras,h]);setNuevoHorario('');
+                            }}>Agregar</button>
                           </div>
                           <div style={{display:'flex',justifyContent:'flex-end',gap:'12px',marginBottom:'18px'}}>
                             <button style={{background:'#fff',color:'#d13fa0',border:'1.5px solid #d13fa0',borderRadius:'8px',padding:'8px 22px',fontWeight:'bold',fontSize:'1rem'}} onClick={() => setMostrarHorariosExtras(false)} disabled={guardandoHorariosExtras}>Cancelar</button>

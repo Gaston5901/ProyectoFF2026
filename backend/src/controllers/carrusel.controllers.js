@@ -32,7 +32,7 @@ export const actualizarCarrusel = async (req, res) => {
     }
 
     // Si mandan data URLs (base64), evitamos tamaños excesivos.
-    // Nota: esto es una protección básica; idealmente, subir archivos (multipart) y guardar URL.
+    // esto es una protección básica; idealmente, subir archivos (multipart) y guardar URL.
     // 14MB de archivo en base64 suele ocupar ~19MB; dejamos margen.
     const MAX_DATA_URL_CHARS = 25_000_000;
     const tooLarge = imagenesLimpias.find(

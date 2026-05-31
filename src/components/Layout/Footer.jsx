@@ -12,15 +12,7 @@ const Footer = () => {
             Especialistas en esmaltado semipermanente, Soft Gel y diseños a mano alzada.
             Cuidamos cada detalle para que tus manos y pies luzcan perfectos.
           </p>
-          {/* <div className="footer-social">
-             <a href="https://www.instagram.com/nailsstudio_delfina" target="_blank" rel="noopener" className="social-link">
-                <Instagram size={24} />
-                <span style={{ display: 'block', fontSize: '13px', marginTop: '2px', color: '#fff' }}>nailsstudio_delfina</span>
-            </a> 
-             <a href="#" className="social-link" title="Facebook (próximamente)">
-              <Facebook size={24} />
-            </a> 
-          </div> */}
+         
         </div>
 
         <div className="footer-section">

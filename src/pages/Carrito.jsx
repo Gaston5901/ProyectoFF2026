@@ -7,6 +7,7 @@ import { horariosAPI, turnosAPI } from '../services/api';
 import { ShoppingCart, Trash2, CreditCard, Plus, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
+import { esHorarioVencido } from '../helpers/turnoTiempo';
 import './Carrito.css';
 import PagarConTransferenciaBtn from '../components/Carrito/PagarConTransferenciaBtn';
 
@@ -50,14 +51,6 @@ const Carrito = () => {
       const ocupados = [];
 
       for (const [fecha, itemsFecha] of porFecha.entries()) {
-        const fechaBase = new Date(`${fecha}T00:00:00`);
-        const fechaPaso = fechaBase < new Date(ahora.toDateString() + 'T00:00:00');
-
-        if (fechaPaso) {
-          expirados.push(...itemsFecha);
-          continue;
-        }
-
         let estado = null;
         try {
           estado = await horariosAPI.getEstadoDia(fecha);
@@ -67,8 +60,7 @@ const Carrito = () => {
 
         itemsFecha.forEach((item) => {
           const hora = item.hora || '00:00';
-          const fechaHora = new Date(`${item.fecha}T${hora}:00`);
-          if (fechaHora <= ahora) {
+          if (esHorarioVencido(item.fecha, hora, ahora)) {
             expirados.push(item);
             return;
           }
@@ -436,9 +428,7 @@ const Carrito = () => {
                 <p>🏠 Dirección: Barrio San Martín mza A casa 5</p>
                 <p>💰 Resto en el estudio</p>
               </div>
-              {/* <button className="btn btn-primary btn-pagar" onClick={procesarPago} disabled={procesando}>
-                {procesando ? (<><div className="spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>Procesando...</>) : (<><CreditCard size={20} />Pagar (prueba local)</>)}
-              </button> */}
+              
               <div className="carrito-pay-title">Elegí tu medio de pago</div>
               <div className="carrito-pay-actions">
                 <button className="btn btn-secondary btn-pagar" onClick={pagarConMercadoPago} disabled={procesando}>

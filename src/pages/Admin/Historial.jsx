@@ -17,9 +17,8 @@ const HISTORIAL_ESTADOS = [
   'devuelto',
 ];
 
-/* =====================================================
-   MODAL TURNO DETALLE — PREMIUM
-===================================================== */
+
+ //  MODAL TURNO DETALLE 
 function ModalTurnoDetalle({ turno, usuario, servicio, onClose }) {
     // Mensaje informativo sobre el dinero y badge mejorado
     let infoDinero = '';
@@ -192,9 +191,9 @@ function ModalTurnoDetalle({ turno, usuario, servicio, onClose }) {
   );
 }
 
-/* =====================================================
-   HISTORIAL — CARDS PREMIUM
-===================================================== */
+
+  // HISTORIAL — CARDS 
+
 const Historial = () => {
   const [turnos, setTurnos] = useState([]);
   const [servicios, setServicios] = useState({});

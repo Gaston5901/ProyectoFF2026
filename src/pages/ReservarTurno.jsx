@@ -2,12 +2,13 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { serviciosAPI, horariosAPI } from '../services/api';
-// import { crearPreferencia as crearPreferenciaMP } from '../services/mercadoPago';
+
 import { useCarrito } from '../store/useCarritoStore';
 import { useAuth } from '../context/AuthContext';
 import { Calendar, Clock, Check, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { format, addDays, startOfToday } from 'date-fns';
 import { toast } from 'react-toastify';
+import { esHorarioVencido } from '../helpers/turnoTiempo';
 import './ReservarTurno.css';
 
 
@@ -37,9 +38,15 @@ const ReservarTurno = () => {
   const [slowConnection, setSlowConnection] = useState(false);
   const [filtroServicio, setFiltroServicio] = useState('todos');
   const [paginaServicios, setPaginaServicios] = useState(1);
+  const [ahoraTick, setAhoraTick] = useState(Date.now());
 
   useEffect(() => {
     cargarServicios();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setAhoraTick(Date.now()), 60000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -80,6 +87,25 @@ const ReservarTurno = () => {
     if (filtroServicio === 'todos') return list;
     return list.filter((s) => String(s?.id || s?._id) === String(filtroServicio));
   }, [serviciosOrdenados, filtroServicio]);
+
+  const ahora = useMemo(() => new Date(ahoraTick), [ahoraTick]);
+
+  const horariosExpirados = useMemo(() => {
+    if (!fechaSeleccionada || !estadoHorarios.todos.length) return [];
+    return estadoHorarios.todos.filter((hora) => esHorarioVencido(fechaSeleccionada, hora, ahora));
+  }, [fechaSeleccionada, estadoHorarios.todos, ahora]);
+
+  const horariosDisponiblesActivos = useMemo(() => {
+    const ocupadosSet = new Set(estadoHorarios.ocupados);
+    const expiradosSet = new Set(horariosExpirados);
+    return estadoHorarios.todos.filter((hora) => !ocupadosSet.has(hora) && !expiradosSet.has(hora));
+  }, [estadoHorarios.todos, estadoHorarios.ocupados, horariosExpirados]);
+
+  useEffect(() => {
+    if (horaSeleccionada && !horariosDisponiblesActivos.includes(horaSeleccionada)) {
+      setHoraSeleccionada('');
+    }
+  }, [horaSeleccionada, horariosDisponiblesActivos]);
 
   useEffect(() => {
     setPaginaServicios(1);
@@ -236,6 +262,10 @@ const ReservarTurno = () => {
 
   const seleccionarHora = (hora, ocupado = false) => {
     if (isGuest) return;
+    if (horariosExpirados.includes(hora)) {
+      toast.error('Ese horario ya expiró');
+      return;
+    }
     if (ocupado) {
       toast.error('Ese horario ya está reservado');
       return;
@@ -248,12 +278,7 @@ const ReservarTurno = () => {
     window.scrollTo({ top: y, behavior: 'smooth' });
   }
 }, 200);
-    // if (servicioSeleccionado && fechaSeleccionada) {
-    //   toast.info(
-    //     `Turno seleccionado: ${servicioSeleccionado.nombre} - ${format(new Date(fechaSeleccionada + 'T00:00:00'), 'dd/MM')} ${hora} hs. Seña 50% y resto en el estudio.`,
-    //     { autoClose: 6000 }
-    //   );
-    // }
+  
   };
 
   const buscarProximoDisponible = async () => {
@@ -281,6 +306,10 @@ const ReservarTurno = () => {
 
   const agregarAlCarritoYContinuar = () => {
     if (isGuest) return;
+    if (!horaSeleccionada || !horariosDisponiblesActivos.includes(horaSeleccionada)) {
+      toast.error('El horario seleccionado ya no está disponible');
+      return;
+    }
     // Si está logueado, flujo normal
     agregarAlCarrito(servicioSeleccionado, fechaSeleccionada, horaSeleccionada);
     navigate('/carrito', { state: { scrollToResumen: true } });
@@ -515,6 +544,7 @@ const ReservarTurno = () => {
                     let badge = null;
                     let ocupado = false;
                     let enproceso = false;
+                    const expirado = horariosExpirados.includes(hora);
                     if (turnoOcupado) {
                       if (["pendiente", "confirmado"].includes(turnoOcupado.estado) && turnoOcupado.estadoTransferencia !== 'rechazado') {
                         badge = <span className="tag-reservado">Reservado</span>;
@@ -528,29 +558,29 @@ const ReservarTurno = () => {
                     return (
                       <div
                         key={hora}
-                        className={`hora-card ${horaSeleccionada === hora ? 'selected' : ''} ${ocupado ? 'ocupado' : ''} ${enproceso ? 'enproceso' : ''}`}
-                        onClick={ocupado ? undefined : () => seleccionarHora(hora, false)}
-                        style={ocupado ? { pointerEvents: 'none', cursor: 'not-allowed', opacity: 1 } : {}}
-                        aria-disabled={ocupado}
-                        tabIndex={ocupado ? -1 : 0}
+                        className={`hora-card ${horaSeleccionada === hora ? 'selected' : ''} ${ocupado ? 'ocupado' : ''} ${enproceso ? 'enproceso' : ''} ${expirado ? 'expirado' : ''}`}
+                        onClick={ocupado || expirado ? undefined : () => seleccionarHora(hora, false)}
+                        style={ocupado || expirado ? { pointerEvents: 'none', cursor: 'not-allowed', opacity: 1 } : {}}
+                        aria-disabled={ocupado || expirado}
+                        tabIndex={ocupado || expirado ? -1 : 0}
                       >
                         <Clock size={20} />
-                        <span className={ocupado ? 'hora-text' : ''}>{hora} hs</span> {badge}
+                        <span className={ocupado || expirado ? 'hora-text' : ''}>{hora} hs</span> {badge || (expirado ? <span className="tag-expirado">Expirado</span> : null)}
                       </div>
                     );
                   })}
                 </div>
 
-                {estadoHorarios.disponibles.length === 0 && (
+                {horariosDisponiblesActivos.length === 0 && (
                   <div className="no-horarios">
-                    <p>Todos los horarios de este día están reservados.</p>
+                    <p>{horariosExpirados.length === estadoHorarios.todos.length && estadoHorarios.todos.length > 0 ? 'Los horarios de este día ya expiraron.' : 'Todos los horarios de este día están reservados.'}</p>
                     <button className="btn btn-primary" onClick={buscarProximoDisponible}>
                       Ir al próximo disponible
                     </button>
                   </div>
                 )}
 
-                {horaSeleccionada && estadoHorarios.disponibles.includes(horaSeleccionada) && (
+                {horaSeleccionada && horariosDisponiblesActivos.includes(horaSeleccionada) && (
                   <div className="resumen-reserva" ref={resumenRef}>
                     <h3>Resumen de tu reserva</h3>
 

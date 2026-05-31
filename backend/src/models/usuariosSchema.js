@@ -15,9 +15,7 @@ const usuarioSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-    // Nota: existe un índice único en Mongo sobre `username` (p.ej. username_1).
-    // Si no guardamos un valor aquí, Mongo interpreta el campo ausente como null y falla con E11000.
-    // Para compatibilidad, usamos el email como username por defecto.
+    
     username: {
       type: String,
       trim: true,

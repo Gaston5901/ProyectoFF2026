@@ -201,7 +201,7 @@ const Reportes = () => {
 
   useEffect(() => {
     cargarDatos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, []);
 
   const bloqueaHorario = (t) => {
@@ -1203,7 +1203,7 @@ const Reportes = () => {
 
       for (const url of candidates) {
         try {
-          // eslint-disable-next-line no-await-in-loop
+          
           const res = await fetch(url, { cache: 'no-store' });
           if (!res.ok) continue;
 
@@ -1211,7 +1211,7 @@ const Reportes = () => {
           // Si la SPA responde index.html, evitamos intentar decodificar HTML como imagen.
           if (ct && !ct.includes('image/')) continue;
 
-          // eslint-disable-next-line no-await-in-loop
+          
           const blob = await res.blob();
           if (!blob) continue;
           return blob;

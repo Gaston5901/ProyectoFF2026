@@ -3,7 +3,7 @@ import api from '../../services/api';
 import Swal from 'sweetalert2';
 import { API_BASE_URL } from '../../config/apiBaseUrl';
 
-const TurnosTransferenciaModal = ({ onClose, onReady, onReloadDatos }) => {
+const TurnosTransferenciaModal = ({ onClose, onReady, onReloadDatos, onAction }) => {
   const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -99,6 +99,13 @@ const TurnosTransferenciaModal = ({ onClose, onReady, onReloadDatos }) => {
       }
       // El mail de confirmación ya se envía desde el backend al aprobar la transferencia
       await fetchTurnos();
+      // Notificar al padre (p.ej. Fab) que procesamos un turno
+      try {
+        if (typeof onReloadDatos === 'function') onReloadDatos();
+      } catch {}
+      try {
+        if (typeof onAction === 'function') onAction();
+      } catch {}
       await Swal.fire({
         title: `Turno ${accion === 'confirmar' ? 'confirmado' : 'rechazado'} correctamente`,
         icon: 'success',

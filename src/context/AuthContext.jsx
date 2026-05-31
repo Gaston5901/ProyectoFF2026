@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usuariosAPI, turnosAPI } from '../services/api';
 import { useCarritoStore, setCarritoStorageForUser } from '../store/useCarritoStore';
+import { esHorarioVencido } from '../helpers/turnoTiempo';
 import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
@@ -34,6 +35,25 @@ export const AuthProvider = ({ children }) => {
       }
       setLoading(false);
     })();
+  }, []);
+
+  useEffect(() => {
+    const limpiarCarritoVencido = () => {
+      const { items } = useCarritoStore.getState();
+      if (!Array.isArray(items) || items.length === 0) return;
+
+      const ahora = new Date();
+      const filtrados = items.filter((item) => !esHorarioVencido(item.fecha, item.hora, ahora));
+
+      if (filtrados.length === items.length) return;
+
+      useCarritoStore.setState({ items: filtrados });
+    };
+
+    limpiarCarritoVencido();
+    const timer = setInterval(limpiarCarritoVencido, 60000);
+
+    return () => clearInterval(timer);
   }, []);
 
   // Si el usuario cambia (login/register/logout), rehidratar el carrito correcto

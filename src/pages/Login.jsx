@@ -156,7 +156,6 @@ const Login = () => {
                   </circle>
                 </svg>
               </span>
-              {/* <div style={{marginTop:18, color:'#d13fa0', fontWeight:600, fontSize:18, textShadow:'0 1px 8px #fff8'}}>Cargando...</div> */}
             </div>
           )}
           <div className="recover-link">
@@ -167,7 +166,6 @@ const Login = () => {
         <div className="auth-footer">
           <p>¿Olvidaste tu contraseña? <Link to="/recuperar">Recuperala aquí</Link></p>
           <p className="mt-2">
-            {/* <small>Usuario de prueba: admin@turnos.com / admin123</small> */}
           </p>
         </div>
       </div>
