@@ -149,7 +149,7 @@ const EditarCarrusel = () => {
       {error && <div className="error-carrusel">{error}</div>}
       <p style={{marginTop:18, color:'#888', fontSize:13}}>
         Puedes agregar imágenes pegando un link o subiendo desde tu computadora.<br/>
-        (En producción, las imágenes subidas deberían guardarse en el servidor o en un servicio como Cloudinary o Firebase Storage.)
+       
       </p>
     </div>
   );
