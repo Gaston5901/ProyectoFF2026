@@ -49,12 +49,12 @@ const Footer = () => {
 
         <div className="footer-section">
           <h3 className="footer-title">Horarios</h3>
-          <p className="footer-text">Lunes: 08:00 - 17:30</p>
-          <p className="footer-text">Martes: 08:00 - 20:00</p>
-          <p className="footer-text">Miércoles: 08:00 - 17:30</p>
-          <p className="footer-text">Jueves: 08:00 - 20:00</p>
-          <p className="footer-text">Viernes: 08:00 - 17:30</p>
-          <p className="footer-text">Sábado: 08:00 - 20:00</p>
+          <p className="footer-text">Lunes: 08:00 - 22:30</p>
+          <p className="footer-text">Martes: 08:00 - 22:30</p>
+          <p className="footer-text">Miércoles: 08:00 - 22:30</p>
+          <p className="footer-text">Jueves: 08:00 - 22:30</p>
+          <p className="footer-text">Viernes: 08:00 - 22:30</p>
+          <p className="footer-text">Sábado: 08:00 - 22:30</p>
           <p className="footer-text" style={{ marginTop: '6px' }}>Domingo: Cerrado</p>
         </div>
       </div>

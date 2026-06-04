@@ -2,16 +2,20 @@ require("dotenv/config");
 
 const https = require("https");
 
+// Plantillas HTML usadas para los distintos correos del sistema.
 const comprobanteTurnoTemplate = require("../emailTemplates/comprobanteTurno");
 const turnoReprogramadoTemplate = require("../emailTemplates/turnoReprogramado");
 const recuperarPasswordTemplate = require("../emailTemplates/recuperarPassword");
 
+// El proveedor se elige por variable de entorno y puede caer en modo automático.
 const provider = String(process.env.EMAIL_PROVIDER || "auto").toLowerCase();
 
+// Flags para saber qué servicios de email están disponibles.
 const hasResend = Boolean(process.env.RESEND_API_KEY);
 const hasSmtp = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
 const hasBrevo = Boolean(process.env.BREVO_API_KEY);
 
+// Separa nombre y email si el from viene en formato "Nombre <mail@dominio>".
 function parseFrom(fromValue) {
   const raw = String(fromValue || "").trim();
   const match = raw.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/);
@@ -23,6 +27,7 @@ function parseFrom(fromValue) {
   return { name: undefined, email: raw };
 }
 
+// Inicializa el cliente Resend si está configurado.
 let resendClient = null;
 if (provider === "resend" || (provider === "auto" && hasResend)) {
   try {
@@ -35,6 +40,7 @@ if (provider === "resend" || (provider === "auto" && hasResend)) {
   }
 }
 
+// Inicializa SMTP como alternativa cuando está configurado.
 let transporter = null;
 if (provider === "smtp" || (provider === "auto" && hasSmtp)) {
   // Fallback SMTP (puede fallar en Render por bloqueo de puertos)
@@ -157,8 +163,10 @@ async function sendEmail({ to, subject, html }) {
       html,
     });
     return;
+    // Remitente por defecto si no se define EMAIL_FROM.
   }
 
+    // Normaliza el destinatario para aceptar string o array.
   // 1) Intentar Resend si está configurado
   if (resendClient) {
     try {
@@ -166,6 +174,7 @@ async function sendEmail({ to, subject, html }) {
         from: defaultFrom,
         to: toNorm,
         subject,
+    // Hace un POST JSON simple usando https nativo.
         html,
       });
       return;
@@ -176,12 +185,14 @@ async function sendEmail({ to, subject, html }) {
     }
   }
 
+  // Envía correo usando la API HTTP de Brevo.
   // 2) SMTP
   if (!transporter) {
     throw new Error("No hay proveedor de email configurado (SMTP o Resend)");
   }
 
   await transporter.sendMail({
+// Envía un correo eligiendo Brevo, Resend o SMTP según la configuración.
     from: defaultFrom,
     to: toNorm,
     subject,
@@ -189,6 +200,7 @@ async function sendEmail({ to, subject, html }) {
   });
 }
 
+// Envia el correo de comprobante cuando se reserva un turno.
 async function enviarComprobanteTurno({
   to,
   nombre,
@@ -218,6 +230,7 @@ async function enviarComprobanteTurno({
   });
 }
 
+// Envia el correo cuando un turno se reprograma.
 async function enviarTurnoReprogramado({
   to,
   nombre,
@@ -249,6 +262,7 @@ async function enviarTurnoReprogramado({
   });
 }
 
+// Envia el correo de recuperación de contraseña con token temporal.
 async function sendPasswordRecoveryEmail(to, token) {
   const minutos = 10;
   const frontend = process.env.FRONTEND_URL || "http://localhost:5173";
@@ -260,6 +274,7 @@ async function sendPasswordRecoveryEmail(to, token) {
   });
 }
 
+// Exporta las funciones que usa el resto de la app.
 module.exports = {
   enviarComprobanteTurno,
   enviarTurnoReprogramado,

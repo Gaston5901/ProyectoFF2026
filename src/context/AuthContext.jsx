@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 const AuthContext = createContext();
 
 export const useAuth = () => {
+  // Hook de acceso al contexto de autenticación.
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth debe ser usado dentro de AuthProvider');
@@ -16,13 +17,16 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  // Estado del usuario autenticado y flags de carga / sincronización.
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mpReconciling, setMpReconciling] = useState(false);
+  // Acciones del carrito persistido.
   const vaciarCarrito = useCarritoStore((state) => state.vaciarCarrito);
   const navigate = useNavigate();
   const mpIntervalRef = useRef(null);
 
+  // Al montar, intenta recuperar la sesión desde localStorage.
   useEffect(() => {
     (async () => {
       const storedUser = localStorage.getItem('user');
@@ -37,6 +41,7 @@ export const AuthProvider = ({ children }) => {
     })();
   }, []);
 
+  // Limpia del carrito los turnos ya vencidos y repite esa verificación cada minuto.
   useEffect(() => {
     const limpiarCarritoVencido = () => {
       const { items } = useCarritoStore.getState();
@@ -56,11 +61,12 @@ export const AuthProvider = ({ children }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Si el usuario cambia (login/register/logout), rehidratar el carrito correcto
+  // Si cambia el usuario, cambia también la key del carrito para rehidratar el correcto.
   useEffect(() => {
     setCarritoStorageForUser(user);
   }, [user]);
 
+  // Reconciliación de pagos de Mercado Pago: espera a que el backend confirme turnos pendientes.
   useEffect(() => {
     if (!user || (!user._id && !user.id)) return;
     const pagoIdPendiente = localStorage.getItem('mpPagoIdPendiente');
@@ -81,6 +87,7 @@ export const AuthProvider = ({ children }) => {
     const intervalMs = 3000;
 
     const limpiarIntervalo = () => {
+      // Evita dejar intervalos vivos cuando el flujo termina.
       if (mpIntervalRef.current) {
         clearInterval(mpIntervalRef.current);
         mpIntervalRef.current = null;
@@ -91,6 +98,7 @@ export const AuthProvider = ({ children }) => {
       if (cancelado) return;
       intentos += 1;
       try {
+        // Consulta los turnos del usuario para ver si el pago ya se confirmó.
         const turnos = await turnosAPI.getByUsuario(user._id || user.id);
         const confirmadosIds = new Set(
           (Array.isArray(turnos) ? turnos : [])
@@ -130,6 +138,7 @@ export const AuthProvider = ({ children }) => {
     mpIntervalRef.current = setInterval(check, intervalMs);
 
     return () => {
+      // Cancela la reconciliación si el componente se desmonta o cambia el usuario.
       cancelado = true;
       limpiarIntervalo();
       setMpReconciling(false);
@@ -138,6 +147,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      // Inicia sesión y guarda usuario + token en localStorage.
       const userData = await usuariosAPI.login(email, password);
       if (userData && userData.usuario && userData.token) {
         const userWithToken = { ...userData.usuario, token: userData.token };
@@ -176,6 +186,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
+      // Registra al usuario como cliente y deja la sesión iniciada si el backend devuelve token.
       const response = await usuariosAPI.create({
         ...userData,
         rol: 'cliente',
@@ -221,10 +232,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Limpia la sesión actual y muestra una pantalla de salida antes de redirigir.
     const currentUser = JSON.parse(localStorage.getItem('user'));
     localStorage.removeItem('user');
     setUser(null);
-    // Cambiar el scope del carrito a guest para que no quede el del usuario anterior
+    // Cambia el carrito al scope de invitado para evitar mezclar datos del usuario anterior.
     setCarritoStorageForUser(null);
     const spinnerDiv = document.createElement('div');
     spinnerDiv.style.position = 'fixed';
@@ -283,11 +295,14 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    // Un usuario admin o superadmin tiene permisos administrativos.
     isAdmin,
     isSuperAdmin,
     loading,
     mpReconciling,
+    // Solo el rol superadmin pasa este filtro.
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // Valores que consumen los componentes de la app.
 };

@@ -1,5 +1,6 @@
 import { pgQuery } from '../database/postgres.js';
 
+// Convierte una fila cruda de PostgreSQL al formato esperado por la API.
 function mapServicioRow(row) {
   if (!row) return row;
   return {
@@ -15,8 +16,10 @@ function mapServicioRow(row) {
   };
 }
 
+// Crea un nuevo servicio.
 export const crearServicio = async (req, res) => {
   try {
+    // Toma los datos del body y los normaliza antes de insertar.
     const { nombre, descripcion, precio, duracion, imagen } = req.body;
     const { rows } = await pgQuery(
       `INSERT INTO servicios (nombre, descripcion, precio, duracion_min, imagen_url)
@@ -40,8 +43,10 @@ export const crearServicio = async (req, res) => {
   }
 };
 
+// Devuelve solo los servicios activos.
 export const obtenerServicios = async (_req, res) => {
   try {
+    // Filtra por activo para no mostrar servicios archivados.
     const { rows } = await pgQuery('SELECT * FROM servicios WHERE activo = true ORDER BY id ASC');
     return res.json(rows.map(mapServicioRow));
   } catch (error) {
@@ -49,8 +54,10 @@ export const obtenerServicios = async (_req, res) => {
   }
 };
 
+// Devuelve un servicio por ID.
 export const obtenerServicio = async (req, res) => {
   try {
+    // Busca el servicio puntual solicitado.
     const { rows } = await pgQuery('SELECT * FROM servicios WHERE id = $1 LIMIT 1', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ mensaje: 'Servicio no encontrado' });
     return res.json(mapServicioRow(rows[0]));
@@ -59,8 +66,10 @@ export const obtenerServicio = async (req, res) => {
   }
 };
 
+// Actualiza un servicio existente.
 export const actualizarServicio = async (req, res) => {
   try {
+    // Usa COALESCE para conservar valores previos cuando no llegan nuevos campos.
     const id = req.params.id;
     const { nombre, descripcion, precio, duracion, imagen } = req.body;
 
@@ -94,8 +103,10 @@ export const actualizarServicio = async (req, res) => {
   }
 };
 
+// Elimina o archiva un servicio según si ya está siendo usado.
 export const eliminarServicio = async (req, res) => {
   try {
+    // Primero verifica si hay turnos asociados al servicio.
     const id = req.params.id;
 
     // Si el servicio está referenciado por turnos, no permitir borrado.
@@ -105,6 +116,7 @@ export const eliminarServicio = async (req, res) => {
     );
     const usedCount = Number(usedRows?.[0]?.count || 0);
     if (usedCount > 0) {
+      // Si ya tiene uso, se desactiva en lugar de borrar.
       const { rows } = await pgQuery(
         `UPDATE servicios
          SET activo = false,
@@ -120,6 +132,7 @@ export const eliminarServicio = async (req, res) => {
       });
     }
 
+    // Si no está en uso, se elimina definitivamente.
     const { rowCount } = await pgQuery('DELETE FROM servicios WHERE id = $1', [id]);
     if (!rowCount) return res.status(404).json({ mensaje: 'Servicio no encontrado' });
     return res.json({ mensaje: 'Servicio eliminado' });

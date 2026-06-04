@@ -244,14 +244,14 @@ const Servicios = () => {
           <div className="info-card">
             <h3>📅 Cancelaciones</h3>
             <p>
-              Podés cancelar tu turno con hasta 24 horas de anticipación para recibir 
+              Podés cancelar tu turno con hasta 48 horas de anticipación para recibir 
               el reembolso de tu seña.
             </p>
           </div>
           <div className="info-card">
             <h3>⏰ Horarios</h3>
             <p>
-              Lunes a Sábado de 9:00 a 19:00 hs. Domingos cerrado.
+              Lunes a Sábado de 08:00 a 22:30 hs. Domingos cerrado.
               Turnos cada hora según disponibilidad.
             </p>
           </div>

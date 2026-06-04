@@ -4,15 +4,17 @@ import bcrypt from 'bcryptjs';
 import { pgQuery } from '../database/postgres.js';
 import { sendPasswordRecoveryEmail } from '../helpers/emailSender.cjs';
 
+// Resuelve el email por defecto del superadmin principal.
 const getDefaultSuperAdminEmail = () =>
   String(
     process.env.DEFAULT_SUPERADMIN_EMAIL ||
       process.env.DEFAULT_ADMIN_EMAIL ||
-      'admin@turnos.com'
+      'superadmin@gmail.com'
   )
     .toLowerCase()
     .trim();
 
+// Convierte una fila cruda de PostgreSQL al formato usado por la API.
 const sanitizeUsuario = (row) => {
   if (!row) return row;
   return {
@@ -29,6 +31,7 @@ const sanitizeUsuario = (row) => {
   };
 };
 
+// Busca un usuario por email o username normalizado.
 async function getUsuarioByEmailOrUsername(emailNorm) {
   const { rows } = await pgQuery(
     `SELECT * FROM usuarios
@@ -39,8 +42,10 @@ async function getUsuarioByEmailOrUsername(emailNorm) {
   return rows[0] || null;
 }
 
+// Devuelve todos los usuarios.
 export const obtenerUsuarios = async (_req, res) => {
   try {
+    // Ordena por ID para tener una lista estable.
     const { rows } = await pgQuery('SELECT * FROM usuarios ORDER BY id ASC');
     return res.json(rows.map(sanitizeUsuario));
   } catch (error) {
@@ -49,8 +54,10 @@ export const obtenerUsuarios = async (_req, res) => {
   }
 };
 
+// Devuelve un usuario por ID.
 export const obtenerUsuario = async (req, res) => {
   try {
+    // Busca el registro solicitado y lo sanea antes de responder.
     const { rows } = await pgQuery('SELECT * FROM usuarios WHERE id = $1 LIMIT 1', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ message: 'Usuario no encontrado' });
     return res.json(sanitizeUsuario(rows[0]));
@@ -60,8 +67,10 @@ export const obtenerUsuario = async (req, res) => {
   }
 };
 
+// Crea un usuario y devuelve token + datos públicos.
 export const crearUsuario = async (req, res) => {
   try {
+    // Define el rol final según el usuario autenticado que crea la cuenta.
     const { nombre, email, telefono, password } = req.body;
 
     const rolRequested = req.body.rol || 'cliente';
@@ -116,8 +125,10 @@ export const crearUsuario = async (req, res) => {
   }
 };
 
+// Actualiza datos de un usuario existente.
 export const actualizarUsuario = async (req, res) => {
   try {
+    // Carga el usuario actual para proteger al superadmin principal.
     const id = req.params.id;
     const { rows: existingRows } = await pgQuery('SELECT * FROM usuarios WHERE id = $1 LIMIT 1', [id]);
     const existing = existingRows[0];
@@ -130,6 +141,7 @@ export const actualizarUsuario = async (req, res) => {
         String(existing.username).toLowerCase().trim() === defaultEmail);
 
     if (isDefault) {
+      // Bloquea cambios sensibles sobre la cuenta principal.
       if (req.body?.rol && req.body.rol !== 'superadmin') {
         return res.status(400).json({ mensaje: 'No se puede cambiar el rol del superadmin principal' });
       }
@@ -188,8 +200,10 @@ export const actualizarUsuario = async (req, res) => {
   }
 };
 
+// Elimina un usuario por ID.
 export const eliminarUsuario = async (req, res) => {
   try {
+    // Verifica primero si es el superadmin principal.
     const id = req.params.id;
     const { rows: existingRows } = await pgQuery('SELECT * FROM usuarios WHERE id = $1 LIMIT 1', [id]);
     const existing = existingRows[0];
@@ -213,8 +227,10 @@ export const eliminarUsuario = async (req, res) => {
   }
 };
 
+// Inicia sesión validando contraseña y devolviendo JWT.
 export const login = async (req, res) => {
   try {
+    // Busca por email o username y valida el hash de la contraseña.
     const { email, password } = req.body;
     const emailNorm = String(email || '').toLowerCase().trim();
 
@@ -241,8 +257,10 @@ export const login = async (req, res) => {
   }
 };
 
+// Solicita recuperación de contraseña mediante token temporal.
 export const recuperarPassword = async (req, res) => {
   try {
+    // Genera un token de un solo uso y lo guarda hasheado.
     const username = req.body?.username;
     const emailNorm = String(username || '').toLowerCase().trim();
     if (!emailNorm) return res.status(400).json({ mensaje: 'Email inválido' });
@@ -274,8 +292,10 @@ export const recuperarPassword = async (req, res) => {
   }
 };
 
+// Reemplaza la contraseña usando el token de recuperación.
 export const resetearPassword = async (req, res) => {
   try {
+    // Valida token y nueva contraseña antes de actualizar.
     const username = req.body?.username;
     const token = req.body?.token;
     const password = req.body?.password;
@@ -317,8 +337,10 @@ export const resetearPassword = async (req, res) => {
   }
 };
 
+// Cambia la contraseña del usuario autenticado.
 export const cambiarPassword = async (req, res) => {
   try {
+    // Requiere la contraseña actual para confirmar la identidad.
     const userIdRaw = req.user?._id;
     const userId = Number(userIdRaw);
     if (!Number.isInteger(userId)) return res.status(401).json({ mensaje: 'No autenticado' });

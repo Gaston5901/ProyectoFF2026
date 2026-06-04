@@ -21,15 +21,16 @@ import webhookRoutes from './src/routes/webhook.routes.js';
 
 
 
+// App principal del backend.
 const app = express();
 app.use(cors());
-// Permite payloads más grandes (p.ej. imágenes en base64 desde el panel admin)
+// Permite payloads más grandes, por ejemplo imágenes en base64 o formularios pesados.
 app.use(express.json({ limit: '30mb' }));
 app.use(express.urlencoded({ extended: true, limit: '30mb' }));
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Health check para verificar deployment + conexión a DB
+// Endpoint de salud para verificar que el servidor levantó y cómo está la base de datos.
 app.get('/api/health', async (req, res) => {
   const states = {
     0: 'disconnected',
@@ -62,6 +63,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 
+// Rutas principales de la API.
 app.use('/api/productos', productosRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/servicios', serviciosRoutes);
@@ -69,12 +71,13 @@ app.use('/api/turnos', turnosRoutes);
 app.use('/api/configuracion', configuracionRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/carrusel', carruselRoutes);
-// Compat: el frontend actual usa /api/pagos
+// Compatibilidad con el frontend actual, que consume /api/pagos.
 app.use('/api/pagos', pagoRoutes);
-// Compat: ruta vieja (singular)
+// Compatibilidad con la ruta vieja en singular.
 app.use('/api/pago', pagoRoutes);
 app.use('/api', webhookRoutes);
 
+// Inicializa la base de datos y luego arranca el servidor HTTP.
 async function start() {
   await initDb();
 

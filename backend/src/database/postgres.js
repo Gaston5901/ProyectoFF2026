@@ -3,9 +3,11 @@ import bcrypt from 'bcryptjs';
 
 let pool;
 
+// Crea y reutiliza una única conexión agrupada a PostgreSQL.
 function getPool() {
   if (pool) return pool;
 
+  // Si existe DATABASE_URL, usa la URL completa; si no, arma la conexión manualmente.
   const connectionString = process.env.DATABASE_URL;
 
   pool = new Pool(
@@ -27,14 +29,17 @@ function getPool() {
   return pool;
 }
 
+// Ejecuta queries SQL usando el pool compartido.
 export async function pgQuery(text, params) {
   const p = getPool();
   return p.query(text, params);
 }
 
+// Inicializa PostgreSQL, aplica pequeñas migraciones y asegura el superadmin.
 export async function initPostgres() {
   const db = process.env.PGDATABASE || '(sin PGDATABASE)';
   try {
+    // Hace una consulta mínima para comprobar que la conexión responde.
     await pgQuery('select 1 as ok');
     console.log(`[postgres] conectado OK (${db})`);
 
@@ -76,26 +81,29 @@ export async function initPostgres() {
     }
 
     // Seed / asegurar superadmin por defecto (similar a ensureDefaultAdmin en Mongo)
+    // Garantiza que exista una cuenta administradora principal en PostgreSQL.
     const superAdminEmail = (
       process.env.DEFAULT_SUPERADMIN_EMAIL ||
       process.env.DEFAULT_ADMIN_EMAIL ||
-      'admin@turnos.com'
+      'superadmin@gmail.com'
     )
       .toLowerCase()
       .trim();
     const superAdminPassword =
       process.env.DEFAULT_SUPERADMIN_PASSWORD ||
       process.env.DEFAULT_ADMIN_PASSWORD ||
-      'admin123';
+      'superadmin123';
     const superAdminNombre = String(process.env.DEFAULT_SUPERADMIN_NOMBRE || 'Triny').trim();
+    const legacyEmails = ['admin@turnos.com'].filter((email) => email !== superAdminEmail);
 
     if (superAdminEmail) {
+      const emailsToMatch = [superAdminEmail, ...legacyEmails];
       const { rows } = await pgQuery(
-        `SELECT id, rol, nombre
+        `SELECT id, rol, nombre, email, username, password_hash
          FROM usuarios
-         WHERE email = $1 OR username = $1
+         WHERE lower(email) = ANY($1::text[]) OR lower(username) = ANY($1::text[])
          LIMIT 1`,
-        [superAdminEmail]
+        [emailsToMatch]
       );
 
       if (!rows[0]) {
@@ -108,15 +116,29 @@ export async function initPostgres() {
         console.log(`[Seed][postgres] Superadmin creado: ${superAdminEmail} (${superAdminNombre})`);
       } else {
         const admin = rows[0];
-        const needsUpdate = admin.rol !== 'superadmin' || String(admin.nombre || '').trim() !== superAdminNombre;
+        const passwordMatches = admin.password_hash
+          ? await bcrypt.compare(String(superAdminPassword), String(admin.password_hash || ''))
+          : false;
+        const needsUpdate =
+          admin.rol !== 'superadmin' ||
+          String(admin.nombre || '').trim() !== superAdminNombre ||
+          String(admin.email || '').toLowerCase().trim() !== superAdminEmail ||
+          String(admin.username || '').toLowerCase().trim() !== superAdminEmail ||
+          !passwordMatches;
         if (needsUpdate) {
+          const passwordHash = passwordMatches
+            ? admin.password_hash
+            : await bcrypt.hash(String(superAdminPassword), 10);
           await pgQuery(
             `UPDATE usuarios
              SET rol = 'superadmin',
                  nombre = $2,
+                 email = $3,
+                 username = $3,
+                 password_hash = $4,
                  updated_at = now()
              WHERE id = $1`,
-            [admin.id, superAdminNombre]
+            [admin.id, superAdminNombre, superAdminEmail, passwordHash]
           );
           console.log(`[Seed][postgres] Superadmin asegurado para: ${superAdminEmail} (${superAdminNombre})`);
         }
@@ -136,6 +158,7 @@ export async function initPostgres() {
   }
 }
 
+// Cierra el pool cuando la app se apaga o necesita liberar recursos.
 export async function closePostgresPool() {
   if (!pool) return;
   await pool.end();

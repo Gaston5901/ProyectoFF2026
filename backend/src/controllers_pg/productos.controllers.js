@@ -1,5 +1,6 @@
 import { pgQuery } from '../database/postgres.js';
 
+// Convierte una fila cruda de PostgreSQL al formato que usa la API.
 function mapProductoRow(row) {
   if (!row) return row;
   return {
@@ -13,8 +14,10 @@ function mapProductoRow(row) {
   };
 }
 
+// Devuelve todos los productos ordenados por ID.
 export const obtenerProductos = async (_req, res) => {
   try {
+    // Lee la tabla completa y la transforma al formato de salida.
     const { rows } = await pgQuery('SELECT * FROM productos ORDER BY id ASC');
     return res.json(rows.map(mapProductoRow));
   } catch (error) {
@@ -22,8 +25,10 @@ export const obtenerProductos = async (_req, res) => {
   }
 };
 
+// Devuelve un producto puntual por ID.
 export const obtenerProducto = async (req, res) => {
   try {
+    // Busca el producto solicitado por parámetro.
     const { rows } = await pgQuery('SELECT * FROM productos WHERE id = $1 LIMIT 1', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ mensaje: 'Producto no encontrado' });
     return res.json(mapProductoRow(rows[0]));
@@ -32,8 +37,10 @@ export const obtenerProducto = async (req, res) => {
   }
 };
 
+// Crea un nuevo producto.
 export const crearProducto = async (req, res) => {
   try {
+    // Toma los campos del body y los prepara para insertar.
     const { nombre, precio, descripcion, imagen } = req.body;
     const { rows } = await pgQuery(
       `INSERT INTO productos (nombre, precio, descripcion, imagen_url)
@@ -47,8 +54,10 @@ export const crearProducto = async (req, res) => {
   }
 };
 
+// Actualiza un producto existente.
 export const actualizarProducto = async (req, res) => {
   try {
+    // Usa el ID de ruta y actualiza solo los campos enviados.
     const id = req.params.id;
     const { nombre, precio, descripcion, imagen } = req.body;
     const { rows } = await pgQuery(
@@ -75,8 +84,10 @@ export const actualizarProducto = async (req, res) => {
   }
 };
 
+// Elimina un producto por su ID.
 export const eliminarProducto = async (req, res) => {
   try {
+    // Borra la fila y devuelve error si no existía.
     const { rowCount } = await pgQuery('DELETE FROM productos WHERE id = $1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ mensaje: 'Producto no encontrado' });
     return res.json({ mensaje: 'Producto eliminado' });

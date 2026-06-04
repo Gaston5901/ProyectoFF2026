@@ -12,14 +12,14 @@ const Nosotros = () => (
         <p><strong>Dirección:</strong> Barrio San Martín mza A casa 5</p>
         <p><strong>Teléfono:</strong> 381-1234567</p>
         <p><strong>Instagram:</strong> @delfinanailsstudio</p>
-        <p><strong>Especialidades:</strong> Esmaltado semipermanente, Soft Gel, Nail Art, Capping, Spa de manos y pies.</p>
+        <p><strong>Especialidades:</strong> Esmaltado semipermanente, Soft Gel, Nail Art, Capping, etc.</p>
       </div>
       <div className="nosotros-personas">
         <h2>Equipo</h2>
         <ul>
           <li><strong>Triny Zelarayan Sanna</strong> - Fundadora y Nail Artist</li>
           <li><strong>Delfina</strong> - Atención al cliente y reservas</li>
-          <li><strong>Colaboradores</strong> - Spa y tratamientos</li>
+         
         </ul>
       </div>
     </div>

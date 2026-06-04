@@ -68,7 +68,7 @@ npm run dev
 Luego visitar: http://localhost:5173
 
 ## 👤 Usuario Admin
-Email: admin@turnos.com  |  Contraseña: admin123
+Email: superadmin@gmail.com  |  Contraseña: superadmin123
 
 ## 📍 Datos del Estudio
 - Nombre: Delfina Nails Studio

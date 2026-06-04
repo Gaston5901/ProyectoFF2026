@@ -350,6 +350,97 @@
   border: 1.5px solid #f06292;
 }
 
+/* En compu, hacer más compactas las cards de hoy/mañana/expirados */
+@media (min-width: 900px) {
+  .turno-hoy-item,
+  .turno-expirado-item {
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+
+  .turno-hora {
+    font-size: 17px;
+    min-width: 48px;
+    line-height: 1;
+  }
+
+  .turno-detalles h4 {
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+
+  .turno-detalles p {
+    font-size: 9px;
+    margin-bottom: 2px;
+    line-height: 1.1;
+  }
+
+  .turno-id,
+  .turno-precio {
+    font-size: 9px;
+  }
+
+  .turno-acciones {
+    gap: 3px;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+
+  .turno-hoy-item .turno-acciones .btn-accion,
+  .turno-expirado-item .turno-acciones .btn-accion,
+  .turno-cancelado-item .turno-acciones .btn-accion {
+    width: auto;
+    height: auto;
+    min-width: 0;
+    padding: 5px 10px;
+    border-radius: 999px;
+    display: inline-flex;
+    gap: 4px;
+    font-size: 10px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .turno-hoy-item .turno-acciones .btn-accion.completar svg,
+  .turno-expirado-item .turno-acciones .btn-accion.completar svg,
+  .turno-cancelado-item .turno-acciones .btn-accion.completar svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .turno-cancelado-item {
+    gap: 8px;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .turno-cancelado-item > div:first-child {
+    min-width: 0;
+  }
+
+  .turno-cancelado-item .turno-id,
+  .turno-cancelado-item .turno-precio {
+    font-size: 9px;
+  }
+
+  .turno-cancelado-item .turno-acciones {
+    gap: 3px !important;
+    justify-self: end;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: auto;
+  }
+
+  .turno-cancelado-item .btn-accion {
+    padding: 4px 7px;
+    font-size: 10px;
+  }
+}
+
 .turno-hora {
   font-size: 24px;
   font-weight: 700;

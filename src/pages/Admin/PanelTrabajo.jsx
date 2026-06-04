@@ -110,14 +110,14 @@ const PanelTrabajo = () => {
       const telefonoUsuario = u?.telefono || t.telefono || '';
       const precioTotal = t.montoTotal ?? s?.precio ?? '';
       return (
-        <div key={t.id} className="turno-cancelado-item" style={{background:'#fff3f3',border:'1.5px solid #e57373',borderRadius:'12px',padding:'12px 18px',marginBottom:'10px'}}>
+        <div key={t.id} className="turno-cancelado-item" style={{background:'#fff3f3',border:'1.5px solid #e57373',borderRadius:'10px',padding:'10px 12px',marginBottom:'8px'}}>
           <div>
             <div style={{fontWeight:'bold',color:'#e53935'}}>{t.hora} - {s?.nombre}</div>
             <div style={{fontSize:'1rem',color:'#ad1457'}}>{nombreUsuario}{telefonoUsuario ? ` / ${telefonoUsuario}` : ''}</div>
             <div className="turno-id" style={{fontSize:'0.9em',color:'#888'}}>ID pago: {getTurnoDisplayId(t)}</div>
             <div className="turno-precio" style={{fontWeight:'bold',color:'#38b000',marginTop:'2px'}}>Total: ${precioTotal}</div>
           </div>
-          <div className="turno-acciones" style={{display:'flex',gap:'8px'}}>
+          <div className="turno-acciones" style={{display:'flex',gap:'6px'}}>
             <button
               className="btn-accion completar"
               onClick={async () => {
@@ -137,7 +137,7 @@ const PanelTrabajo = () => {
               }}
               title="Completar solo seña"
             >
-              <CheckCircle size={20} /> Completar seña
+              <CheckCircle size={18} /> Completar seña
             </button>
             <button
               className="btn-accion cancelar"

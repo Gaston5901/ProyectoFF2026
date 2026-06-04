@@ -1,5 +1,6 @@
 import { pgQuery } from '../database/postgres.js';
 
+// Convierte la fila cruda de PostgreSQL al formato que usa la API.
 function mapCarruselRow(row) {
   if (!row) return row;
   return {
@@ -10,11 +11,13 @@ function mapCarruselRow(row) {
   };
 }
 
+// Devuelve el carrusel principal (id = 1).
 export const obtenerCarrusel = async (_req, res) => {
   try {
+    // Busca la fila base del carrusel.
     const { rows } = await pgQuery('SELECT * FROM carrusel WHERE id = 1 LIMIT 1');
     if (!rows[0]) {
-      // debería existir, pero por las dudas
+      // Si no existe, la crea para asegurar que siempre haya una fila.
       const ins = await pgQuery('INSERT INTO carrusel (id) VALUES (1) ON CONFLICT (id) DO NOTHING RETURNING *');
       return res.json(mapCarruselRow(ins.rows[0] || { id: 1, imagenes: [] }));
     }
@@ -24,8 +27,10 @@ export const obtenerCarrusel = async (_req, res) => {
   }
 };
 
+// Actualiza las imágenes del carrusel principal.
 export const actualizarCarrusel = async (req, res) => {
   try {
+    // Acepta un array de imágenes; si no viene, usa vacío.
     const imagenes = Array.isArray(req.body?.imagenes) ? req.body.imagenes : [];
     const { rows } = await pgQuery(
       `UPDATE carrusel

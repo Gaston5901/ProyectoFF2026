@@ -1,9 +1,10 @@
 
-// Plantilla de email de comprobante de turno
+// Plantilla HTML del email de comprobante de turno.
 module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, total, pagoId, fecha, hora, extras }) {
   const TZ = 'America/Argentina/Buenos_Aires';
   const nombreSafe = String(nombre || '').trim() || 'cliente';
 
+  // Normaliza la hora para mostrarla siempre con formato HH:MM.
   const normalizeHora = (value) => {
     let h = String(value || '').trim();
     if (!h) return '';
@@ -17,6 +18,7 @@ module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, t
     return h;
   };
 
+  // Convierte la fecha a formato corto dd/mm/yyyy para el email.
   const formatDateShort = (value) => {
     if (!value) return '';
 
@@ -76,6 +78,7 @@ module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, t
                 <ul style="padding-left:18px; margin:0 0 10px 0;">
                   ${servicios.map(s => `<li style='margin-bottom:4px;'><b>${s.title || s.nombre}</b> - $${s.unit_price || s.precio}</li>`).join('')}
                 </ul>
+                <!-- Resumen del turno y datos de pago -->
                 <div style="font-size:15px;margin:10px 0 0 0;">
                   <b>Seña pagada:</b> <span style="color:#388e3c">$${seña}</span><br>
                   <b>Total del turno:</b> <span style="color:#d13fa0">$${total}</span><br>
@@ -84,6 +87,7 @@ module.exports = function comprobanteTurnoTemplate({ nombre, servicios, seña, t
                   ${horaFormateada && horaFormateada !== '-' ? `<b> Hora:</b> <span style="color:#222">${horaFormateada}</span>` : ''}
                 </div>
                 <hr style="border:none;height:1px;background:linear-gradient(to right,transparent,#d13fa0,transparent);margin:18px 0;" />
+                <!-- Bloque opcional con usuario y contraseña generados automáticamente -->
                 ${extras ? `<div style='margin:16px 0 12px 0;padding:0;background:none;border-radius:0;display:block;max-width:98vw;'>
                   <div style='font-size:15px;color:#d13fa0;font-weight:600;margin-bottom:8px;'>¡Ya tienes tu cuenta!</div>
                   <div style='font-size:15px;color:#333;margin-bottom:6px;'>Este es tu usuario y contraseña para iniciar sesión:</div>

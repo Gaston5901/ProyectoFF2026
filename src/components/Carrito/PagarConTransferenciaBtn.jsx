@@ -3,7 +3,9 @@ import ReactDOM from 'react-dom';
 import TransferenciaForm from './TransferenciaForm';
 import { Landmark } from 'lucide-react';
 
+// Modal que muestra el formulario de transferencia por encima de toda la app.
 const ModalTransferencia = ({ open, onClose }) => {
+  // Si no está abierto, no renderiza nada.
   if (!open) return null;
   const modalContent = (
     <div className="transferencia-modal-overlay" style={{
@@ -37,6 +39,7 @@ const ModalTransferencia = ({ open, onClose }) => {
         }
       `}</style>
 
+      {/* Tarjeta central donde se monta el formulario real de transferencia. */}
       <div className="transferencia-modal-card" style={{
         background: '#fff',
         borderRadius: 14,
@@ -55,8 +58,10 @@ const ModalTransferencia = ({ open, onClose }) => {
         justifyContent: 'flex-start',
         overflow: 'hidden',
       }}>
+        {/* Botón para cerrar el modal. */}
         <button onClick={onClose} style={{position:'absolute',top:10,right:10,fontSize:22,background:'none',border:'none',cursor:'pointer',color:'#e91e63',fontWeight:'bold',zIndex:2}}>×</button>
         <div style={{padding: 0}}>
+          {/* Formulario reutilizable que captura los datos de la transferencia. */}
           <TransferenciaForm />
         </div>
       </div>
@@ -65,10 +70,12 @@ const ModalTransferencia = ({ open, onClose }) => {
   return ReactDOM.createPortal(modalContent, document.body);
 };
 
+// Botón que abre el modal de pago por transferencia.
 const PagarConTransferenciaBtn = () => {
   const [open, setOpen] = useState(false);
   return (
     <>
+      {/* Disparador visual del modal. */}
       <button
         className="btn btn-secondary btn-pagar btn-transferencia"
         onClick={() => setOpen(true)}
@@ -76,6 +83,7 @@ const PagarConTransferenciaBtn = () => {
         <Landmark size={20} />
         Transferencia
       </button>
+      {/* Se monta fuera del flujo normal para quedar por encima del resto del contenido. */}
       <ModalTransferencia open={open} onClose={()=>setOpen(false)} />
     </>
   );

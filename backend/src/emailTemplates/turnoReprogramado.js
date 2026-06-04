@@ -1,4 +1,4 @@
-// Plantilla de email: turno reprogramado
+// Plantilla HTML del email de turno reprogramado.
 module.exports = function turnoReprogramadoTemplate({
   nombre,
   servicio,
@@ -11,9 +11,11 @@ module.exports = function turnoReprogramadoTemplate({
   restoAPagar,
   pagoId,
 }) {
+  // Lista de días usada para mostrar la fecha con nombre del día.
   const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const TZ = 'America/Argentina/Buenos_Aires';
 
+  // Normaliza la hora para mostrarla siempre como HH:MM.
   const normalizeHora = (value) => {
     let h = String(value || '').trim();
     if (!h) return '';
@@ -25,6 +27,7 @@ module.exports = function turnoReprogramadoTemplate({
     return h;
   };
 
+  // Convierte fechas en distintos formatos a un objeto Date válido.
   const toDate = (value) => {
     if (!value) return null;
     if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
@@ -42,6 +45,7 @@ module.exports = function turnoReprogramadoTemplate({
     return Number.isNaN(d.getTime()) ? null : d;
   };
 
+  // Formatea valores numéricos como dinero.
   const money = (value) => {
     const n = Number(value);
     if (!Number.isFinite(n)) return null;
@@ -49,6 +53,7 @@ module.exports = function turnoReprogramadoTemplate({
     return `$${rounded}`;
   };
 
+  // Devuelve la fecha corta dd/mm/yyyy.
   const formatearCorto = (fecha) => {
     const d = toDate(fecha);
     if (d) {
@@ -63,6 +68,7 @@ module.exports = function turnoReprogramadoTemplate({
     return raw;
   };
 
+  // Devuelve la fecha con nombre del día, por ejemplo: Lunes 01/06/2026.
   const formatearConDia = (fecha) => {
     const d = toDate(fecha);
     if (!d) return formatearCorto(fecha);
@@ -75,6 +81,7 @@ module.exports = function turnoReprogramadoTemplate({
   const ha = horaAnterior ? `${normalizeHora(horaAnterior)} hs` : '';
   const hn = horaNueva ? `${normalizeHora(horaNueva)} hs` : '';
 
+  // Prepara los montos para mostrarlos solo si existen.
   const totalFmt = money(montoTotal);
   const pagadoFmt = money(montoPagado);
   const restoFmt = money(restoAPagar);
@@ -104,6 +111,7 @@ module.exports = function turnoReprogramadoTemplate({
                   </div>
                 </div>
 
+                <!-- Bloque con la nueva fecha y horario reservados -->
                 <div style="display: block; border: 1px solid rgba(209,63,160,0.25); border-radius: 12px; padding: 12px 14px; margin: 0 0 12px 0; background: rgba(209,63,160,0.06);">
                   <div style="font-weight: 900; color: #d13fa0; margin-bottom: 8px;">Nueva fecha</div>
                   <div style="font-size: 15px; color: #222;">
@@ -111,11 +119,13 @@ module.exports = function turnoReprogramadoTemplate({
                   </div>
                 </div>
 
+                <!-- Servicio incluido en el turno -->
                 <div style="border: 1px solid rgba(209,63,160,0.20); border-radius: 12px; padding: 12px 14px; margin: 0 0 12px 0; background: rgba(209,63,160,0.06);">
                   <div style="font-weight: 800; color: #d13fa0; margin-bottom: 6px;">Servicio</div>
                   <div style="font-size: 14px; color: #222; font-weight: 700;">${servicio || 'Servicio'}</div>
                 </div>
 
+                <!-- Resumen de pago que aparece solo si hay datos disponibles -->
                 ${mostrarPago ? `
                 <div style="border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 12px 14px; margin: 0 0 12px 0; background: #fff;">
                   <div style="font-weight: 900; color: #222; margin-bottom: 8px;">Detalle del turno</div>
@@ -126,6 +136,7 @@ module.exports = function turnoReprogramadoTemplate({
                 </div>
                 ` : ''}
 
+                <!-- Mensajes de cierre y soporte -->
                 <p style="font-size: 13px; color: rgba(0,0,0,0.65); margin: 12px 0 0 0;">Tu horario anterior quedó liberado y el nuevo quedó reservado.</p>
                 <p style="font-size: 14px; color: #333; margin: 10px 0 0 0;">Si tenés alguna consulta, respondé este mail y te ayudamos.</p>
               </td>

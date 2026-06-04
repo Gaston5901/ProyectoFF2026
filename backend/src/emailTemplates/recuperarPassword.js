@@ -1,4 +1,4 @@
-// Plantilla HTML profesional para email de recuperación de contraseña
+// Plantilla HTML del email de recuperación de contraseña.
 module.exports = function recuperarPasswordTemplate({ resetUrl, minutos }) {
   return `
   <div style="font-family: 'Segoe UI', Arial, sans-serif; background: #f7f7f7; padding: 0; margin: 0;">
@@ -14,17 +14,20 @@ module.exports = function recuperarPasswordTemplate({ resetUrl, minutos }) {
             </tr>
             <tr>
               <td style="padding: 0 24px 8px 24px;">
+                <!-- Explica por qué se envió el correo y cuánto dura el enlace -->
                 <p style="font-size: 16px; color: #333; margin: 0 0 8px 0;">Recibimos una solicitud para restablecer tu contraseña en <b>Delfina Nails Studio</b>.</p>
                 <p style="font-size: 15px; color: #333; margin: 0 0 16px 0;">Haz click en el siguiente botón para crear una nueva contraseña. Este enlace es válido por <b>${minutos} minutos</b>:</p>
               </td>
             </tr>
             <tr>
               <td align="center" style="padding: 0 24px 24px 24px;">
+                <!-- Botón principal que lleva al formulario de reset -->
                 <a href="${resetUrl}" style="background: linear-gradient(90deg,#e94057,#8a2387); color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 17px; font-weight: 600; letter-spacing: 1px; display: inline-block;">Restablecer contraseña</a>
               </td>
             </tr>
             <tr>
               <td style="padding: 0 24px 24px 24px;">
+                <!-- Aviso de seguridad por si el usuario no pidió el cambio -->
                 <p style="font-size: 14px; color: #888; margin: 0;">Si no solicitaste este cambio, puedes ignorar este correo. Por seguridad, el enlace expirará automáticamente.</p>
               </td>
             </tr>

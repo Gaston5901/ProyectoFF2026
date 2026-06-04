@@ -1,5 +1,6 @@
 import { pgQuery } from '../database/postgres.js';
 
+// Convierte una fila cruda de PostgreSQL al formato usado por el frontend/API.
 function mapConfigRow(row) {
   if (!row) return row;
   return {
@@ -15,10 +16,13 @@ function mapConfigRow(row) {
   };
 }
 
+// Devuelve la configuración principal (id = 1).
 export const obtenerConfiguracion = async (_req, res) => {
   try {
+    // Busca la fila única de configuración.
     const { rows } = await pgQuery('SELECT * FROM configuracion WHERE id = 1 LIMIT 1');
     if (!rows[0]) {
+      // Si no existe, la crea y luego la vuelve a leer.
       await pgQuery('INSERT INTO configuracion (id) VALUES (1) ON CONFLICT (id) DO NOTHING');
       const again = await pgQuery('SELECT * FROM configuracion WHERE id = 1 LIMIT 1');
       return res.json(mapConfigRow(again.rows[0]));
@@ -29,11 +33,12 @@ export const obtenerConfiguracion = async (_req, res) => {
   }
 };
 
+// Actualiza parcialmente la configuración principal.
 export const actualizarConfiguracion = async (req, res) => {
   try {
     const body = req.body || {};
 
-    // Nota: mantener nombres del API (camelCase)
+    // Mantiene los nombres del API en camelCase y los traduce a columnas SQL.
     const { rows } = await pgQuery(
       `UPDATE configuracion
        SET hora_inicio = COALESCE($1, hora_inicio),
@@ -61,8 +66,10 @@ export const actualizarConfiguracion = async (req, res) => {
   }
 };
 
+// Devuelve solo el objeto horarios_por_dia de la configuración.
 export const obtenerHorariosPorDia = async (_req, res) => {
   try {
+    // Lee la configuración y devuelve el mapa de horarios.
     const { rows } = await pgQuery('SELECT horarios_por_dia FROM configuracion WHERE id = 1 LIMIT 1');
     return res.json(rows?.[0]?.horarios_por_dia || {});
   } catch (error) {
@@ -70,8 +77,10 @@ export const obtenerHorariosPorDia = async (_req, res) => {
   }
 };
 
+// Reemplaza por completo el mapa horarios_por_dia.
 export const actualizarHorariosPorDia = async (req, res) => {
   try {
+    // Toma el body como estructura completa de horarios.
     const horariosPorDia = req.body || {};
     const { rows } = await pgQuery(
       `UPDATE configuracion

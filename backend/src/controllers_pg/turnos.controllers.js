@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { pgQuery } from '../database/postgres.js';
 import { enviarComprobanteTurno, enviarTurnoReprogramado } from '../helpers/emailSender.cjs';
 
+// Normaliza horas para que siempre queden con formato HH:MM.
 function normalizeHora(value) {
   let hora = String(value || '').trim();
   if (/^\d{1,2}:\d{1,2}$/.test(hora)) {
@@ -13,6 +14,7 @@ function normalizeHora(value) {
   return hora;
 }
 
+// Convierte una fecha a formato YYYY-MM-DD para usarla en emails.
 function formatFechaEmail(value) {
   if (!value) return '';
   if (value instanceof Date) {
@@ -28,6 +30,7 @@ function formatFechaEmail(value) {
   return parsed.toISOString().slice(0, 10);
 }
 
+// Convierte una fila cruda de PostgreSQL al formato esperado por la API.
 function mapTurnoRow(row) {
   if (!row) return row;
 
@@ -77,11 +80,13 @@ function mapTurnoRow(row) {
   };
 }
 
+// Lee el mapa de horarios configurado por día o por fecha especial.
 async function getConfigHorariosPorDia() {
   const { rows } = await pgQuery('SELECT horarios_por_dia FROM configuracion WHERE id = 1 LIMIT 1');
   return rows?.[0]?.horarios_por_dia || {};
 }
 
+// Lee el porcentaje de seña configurado, con fallback a 50%.
 async function getPorcentajeSenia() {
   const { rows } = await pgQuery('SELECT porcentaje_senia FROM configuracion WHERE id = 1 LIMIT 1');
   const raw = rows?.[0]?.porcentaje_senia;
@@ -90,12 +95,14 @@ async function getPorcentajeSenia() {
   return Math.min(100, Math.max(0, val));
 }
 
+// Redondea valores monetarios a 2 decimales.
 function round2(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;
   return Math.round(n * 100) / 100;
 }
 
+// Calcula la seña a partir del total y el porcentaje configurado.
 function computeSenia(montoTotal, porcentajeSenia) {
   const total = Number(montoTotal);
   if (!Number.isFinite(total) || total <= 0) return 0;
@@ -104,6 +111,7 @@ function computeSenia(montoTotal, porcentajeSenia) {
   return round2(total * (pct / 100));
 }
 
+// Devuelve los horarios válidos uniendo horarios base y excepciones de fecha.
 function computeHorariosValidos(horariosPorDia, fecha) {
   const day = new Date(fecha + 'T00:00:00').getDay();
   const normales = Array.isArray(horariosPorDia[String(day)]) ? horariosPorDia[String(day)] : [];
@@ -112,16 +120,19 @@ function computeHorariosValidos(horariosPorDia, fecha) {
   return Array.from(new Set([...normales, ...extrasFecha].map(limpiarHora)));
 }
 
+// Busca los datos del servicio para incluirlos en emails y cálculos.
 async function getServicioForEmail(servicioId) {
   const { rows } = await pgQuery('SELECT nombre, precio FROM servicios WHERE id = $1 LIMIT 1', [servicioId]);
   return rows[0] || null;
 }
 
+// Indica si la request pidió enviar email o no.
 function shouldSendEmail(req) {
   const v = req?.body?.enviarEmail;
   return v !== false && v !== 'false';
 }
 
+// Intenta resolver un nombre amigable para usar en el email.
 async function resolveNombreParaEmailFromTurnoRow(turnoRow) {
   const nombreTurno = String(turnoRow?.nombre || '').trim();
   if (nombreTurno) return nombreTurno;
@@ -147,6 +158,7 @@ async function resolveNombreParaEmailFromTurnoRow(turnoRow) {
   return 'cliente';
 }
 
+// Envuelve una promesa con timeout para no bloquear envíos de email.
 function withTimeout(promise, ms) {
   return Promise.race([
     promise,
@@ -154,6 +166,7 @@ function withTimeout(promise, ms) {
   ]);
 }
 
+// Busca un usuario por email o lo crea si no existe.
 async function findOrCreateUsuarioByEmail({ emailNorm, nombre, telefono, passwordGenerada }) {
   const { rows: foundRows } = await pgQuery('SELECT id, email, nombre, telefono FROM usuarios WHERE email = $1 LIMIT 1', [
     emailNorm,
@@ -176,9 +189,10 @@ async function findOrCreateUsuarioByEmail({ emailNorm, nombre, telefono, passwor
   return { usuarioId: rows[0].id, usuarioCreadoAhora: true, passwordGenerada: passwordToUse };
 }
 
-// Obtener turnos en proceso (para admin confirmar/rechazar transferencia)
+// Devuelve los turnos que están esperando revisión de transferencia.
 export const obtenerTurnosEnProceso = async (_req, res) => {
   try {
+    // Cruza turnos con usuario y servicio para mostrar nombres legibles.
     const { rows } = await pgQuery(
       `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
               , s.nombre AS servicio_nombre
@@ -194,8 +208,10 @@ export const obtenerTurnosEnProceso = async (_req, res) => {
   }
 };
 
+// Aprueba una transferencia, confirma el turno y luego envía el comprobante.
 export const aprobarTransferencia = async (req, res) => {
   try {
+    // Marca la transferencia como aprobada y asegura el estado confirmado.
     const { rows } = await pgQuery(
       `UPDATE turnos
        SET estado_transferencia = 'aprobado',
@@ -262,8 +278,10 @@ export const aprobarTransferencia = async (req, res) => {
   }
 };
 
+// Rechaza una transferencia y guarda el motivo.
 export const rechazarTransferencia = async (req, res) => {
   try {
+    // Cambia el estado y conserva el motivo escrito por admin.
     const motivo = (req.body && req.body.motivo) ? String(req.body.motivo) : '';
     const { rows } = await pgQuery(
       `UPDATE turnos
@@ -283,9 +301,10 @@ export const rechazarTransferencia = async (req, res) => {
   }
 };
 
-// Crear turno con comprobante de transferencia (POST /transferencia)
+// Crea un turno con comprobante de transferencia adjunto.
 export const crearTurnoTransferencia = async (req, res) => {
   try {
+    // Obtiene datos del formulario y valida el archivo subido.
     const { email, nombre, telefono, servicio, fecha, hora, comentario, montoTotal } = req.body;
     const comprobanteFile = req.file;
 
@@ -407,8 +426,10 @@ export const crearTurnoTransferencia = async (req, res) => {
   }
 };
 
+// Marca la seña como devuelta y deja el turno en estado devuelto.
 export const devolverSenia = async (req, res) => {
   try {
+    // Actualiza solo las columnas vinculadas a la devolución.
     const { rows } = await pgQuery(
       `UPDATE turnos
        SET senia_devuelta = true,
@@ -426,8 +447,10 @@ export const devolverSenia = async (req, res) => {
   }
 };
 
+// Crea un turno presencial o confirmado desde el panel/flujo principal.
 export const crearTurno = async (req, res) => {
   try {
+    // Lee lo mínimo necesario del request para crear la reserva.
     const { email, nombre, telefono, servicio, fecha } = req.body;
 
     const emailNorm = String(email || '').toLowerCase().trim();
@@ -596,8 +619,10 @@ export const crearTurno = async (req, res) => {
   }
 };
 
+// Devuelve todos los turnos, con opción de limitar la cantidad.
 export const obtenerTurnos = async (req, res) => {
   try {
+    // Si llega limit, ordena por más nuevos; si no, por fecha/hora.
     const limitRaw = req?.query?.limit;
     const limitParsed = Number.parseInt(String(limitRaw ?? ''), 10);
     const hasLimit = Number.isFinite(limitParsed) && limitParsed > 0;
@@ -625,8 +650,10 @@ export const obtenerTurnos = async (req, res) => {
   }
 };
 
+// Devuelve un turno puntual por ID.
 export const obtenerTurno = async (req, res) => {
   try {
+    // Busca el turno y adjunta los nombres relacionados.
     const { rows } = await pgQuery(
       `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
               , s.nombre AS servicio_nombre
@@ -644,8 +671,10 @@ export const obtenerTurno = async (req, res) => {
   }
 };
 
+// Devuelve todos los turnos de un usuario.
 export const obtenerTurnosPorUsuario = async (req, res) => {
   try {
+    // Filtra por usuario y ordena cronológicamente.
     const usuarioId = req.params.usuarioId;
     const { rows } = await pgQuery(
       `SELECT t.*, u.username AS usuario_username, u.nombre AS usuario_nombre
@@ -663,8 +692,10 @@ export const obtenerTurnosPorUsuario = async (req, res) => {
   }
 };
 
+// Actualiza un turno existente y valida reprogramaciones.
 export const actualizarTurno = async (req, res) => {
   try {
+    // Carga el estado previo para comparar cambios de fecha/hora.
     const id = req.params.id;
     const body = req.body || {};
 
@@ -803,8 +834,10 @@ export const actualizarTurno = async (req, res) => {
   }
 };
 
+// Elimina un turno por ID.
 export const eliminarTurno = async (req, res) => {
   try {
+    // Borra la fila y responde con error si no existía.
     const { rowCount } = await pgQuery('DELETE FROM turnos WHERE id = $1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ mensaje: 'Turno no encontrado' });
     return res.json({ mensaje: 'Turno eliminado' });

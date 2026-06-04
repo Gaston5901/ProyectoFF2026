@@ -8,7 +8,7 @@ const getDefaultSuperAdminEmail = () =>
   String(
     process.env.DEFAULT_SUPERADMIN_EMAIL ||
       process.env.DEFAULT_ADMIN_EMAIL ||
-      "admin@turnos.com"
+      "superadmin@gmail.com"
   )
     .toLowerCase()
     .trim();

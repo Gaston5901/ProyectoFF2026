@@ -10,11 +10,13 @@ import { FaArrowRight } from 'react-icons/fa';
 import { FaChevronDown } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 
+// Alias disponibles para que el usuario transfiera por Mercado Pago u otra billetera.
 const aliasList = [
   'Triny.zela.sanna.mp',
   'TZELARAYANSAN.NX.ARS',
 ];
 
+// Lista base de bancos y billeteras que se puede filtrar desde el input.
 const metodoOpcionesBase = [
   'Banco BBVA',
   'Banco Ciudad',
@@ -56,8 +58,10 @@ const metodoOpcionesBase = [
 ];
 
 const TransferenciaForm = () => {
+  // Lee el carrito actual y el usuario autenticado.
   const { items, calcularTotal, vaciarCarrito } = useCarrito();
   const { user } = useAuth();
+  // Estado del formulario.
   const [nombreTitular, setNombreTitular] = useState('');
   const [metodo, setMetodo] = useState('');
   const [metodoOpen, setMetodoOpen] = useState(false);
@@ -70,6 +74,7 @@ const TransferenciaForm = () => {
   const closeMetodoTimerRef = useRef(null);
   const navigate = useNavigate();
 
+  // Valida que el archivo adjunto sea imagen o PDF.
   const handleFileChange = e => {
     const file = e.target.files[0];
     if (!file) {
@@ -87,6 +92,7 @@ const TransferenciaForm = () => {
     setComprobante(file);
   };
 
+  // Envía el comprobante de transferencia al backend para crear el turno.
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
@@ -108,6 +114,7 @@ const TransferenciaForm = () => {
     }
     setEnviando(true);
     try {
+      // Enviamos multipart/form-data porque hay un archivo adjunto.
       const formData = new FormData();
       // Tomar el primer item del carrito (solo se permite uno por reserva)
       const primerItem = items[0] || {};
@@ -127,6 +134,7 @@ const TransferenciaForm = () => {
       formData.append('montoTotal', primerItem.servicio?.precio || 0);
       // Estado inicial: pendiente
       formData.append('estadoTransferencia', 'pendiente');
+      // El backend recibe el formulario con archivo y crea el turno pendiente.
       await api.post('/turnos/transferencia', formData, {
         headers: undefined // No headers manuales, axios detecta FormData
       });
@@ -164,19 +172,22 @@ const TransferenciaForm = () => {
     setEnviando(false);
   };
 
-  // Calcular datos del primer servicio (si hay uno solo)
+  // El flujo actual usa solo el primer servicio del carrito para la reserva.
   const primerItem = items[0] || {};
   const monto = primerItem.servicio?.precio || 0;
   const senia = Math.round(monto * 0.5);
 
+  // Solo habilita el envío cuando están completos los tres campos requeridos.
   const camposCompletos = nombreTitular && comprobante && metodo;
   const metodoOpciones = useMemo(() => {
+    // Normaliza y ordena la lista de bancos/billeteras para evitar duplicados.
     const uniq = Array.from(new Set(metodoOpcionesBase.map((v) => String(v).trim()).filter(Boolean)));
     uniq.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
     return uniq;
   }, []);
 
   const metodoOpcionesFiltradas = useMemo(() => {
+    // Filtra opciones según lo que escribe el usuario.
     const normalize = (txt) => String(txt || '')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
@@ -188,6 +199,7 @@ const TransferenciaForm = () => {
     return metodoOpciones.filter((op) => normalize(op).includes(q));
   }, [metodo, metodoOpciones]);
 
+  // Muestra una ayuda si el usuario intenta seguir sin completar los campos.
   const showCamposHint = () => {
     if (camposCompletos || enviando) return;
     const now = Date.now();
@@ -207,6 +219,7 @@ const TransferenciaForm = () => {
       }
     });
   };
+            /* Layout de una sola columna en pantallas chicas. */
 
   return (
     <form className="transferencia-form" onSubmit={handleSubmit} style={{
@@ -243,6 +256,7 @@ const TransferenciaForm = () => {
           padding-top: 2px;
         }
         @media (max-width: 600px) {
+          /* Ajustes extra para que el formulario no desborde en móvil. */
           .transferencia-grid {
             gap: 10px;
           }
@@ -300,6 +314,7 @@ const TransferenciaForm = () => {
           }
         }
         @media (min-width: 900px) {
+          /* En pantallas grandes, distribuye el formulario en dos columnas. */
           .transferencia-grid {
             grid-template-columns: 1fr 1fr;
             column-gap: 16px;
@@ -314,6 +329,7 @@ const TransferenciaForm = () => {
 
       <h2 style={{color:'#e91e63',textAlign:'center'}}>Pago por Transferencia</h2>
       <div className="transferencia-col-2">
+        {/* Alias que el usuario puede copiar para hacer la transferencia. */}
         <strong style={{display:'block',marginBottom:2}}>Alias para transferir:</strong>
         <ul style={{margin:'8px 0 0 0',padding:'0',listStyle:'none',position:'relative'}}>
           {aliasList.map((alias, idx) => (
@@ -330,11 +346,13 @@ const TransferenciaForm = () => {
         </ul>
       </div>
       <div className="transferencia-grid">
+        {/* Nombre del titular de la cuenta desde la que se transfiere. */}
         <label style={{fontWeight:600}}>
           Nombre del titular que transfiere:
           <input type="text" value={nombreTitular} onChange={e=>setNombreTitular(e.target.value)} required style={{width:'100%',marginTop:6,padding:8,borderRadius:6,border:'1.5px solid #e91e63'}} />
         </label>
 
+        {/* Input con buscador para elegir banco o billetera. */}
         <label style={{fontWeight:600}}>
           Banco / billetera (buscá o elegí):
           <div style={{ position: 'relative', marginTop: 6 }}>
@@ -448,11 +466,13 @@ const TransferenciaForm = () => {
             )}
           </div>
 
+          {/* Texto de ayuda para que el usuario sepa que puede escribir o elegir. */}
           <div style={{ marginTop: 6, fontSize: 12, color: '#666', fontWeight: 500 }}>
             Podés escribir el nombre o elegirlo de la lista.
           </div>
         </label>
 
+        {/* Comprobante obligatorio: imagen o PDF. */}
         <label style={{fontWeight:600}}>
           Comprobante (foto o PDF):
           <div style={{position:'relative',width:'100%',marginTop:6}}>
@@ -503,6 +523,7 @@ const TransferenciaForm = () => {
           )}
         </label>
 
+        {/* CTA final: muestra la seña y habilita el envío solo si todo está completo. */}
         <div className="transferencia-cta" onMouseEnter={showCamposHint} onClick={showCamposHint}>
           <div style={{ fontWeight: 600 }}>
             Seña a transferir:{' '}
